@@ -55,15 +55,17 @@ export async function POST(req: Request) {
 
   // Handle the events
   if (evt.type === 'user.created' || evt.type === 'user.updated') {
-    const { error } = await supabase.from('profiles').upsert(
-      {
-        id: id,
+    const { error } = await supabase
+    .from('profiles')
+    .upsert(
+        {
+        id: id,            // This matches the Clerk ID
         email: email,
         full_name: fullName,
-        // Optional: you can omit role here if you want to keep the current 
-        // role during updates, or use a default if it's a new user.
-      },
-      { onConflict: 'id' }
+        // Note: We don't force 'PATIENT' here so we don't 
+        // accidentally overwrite an Admin back to a Patient
+        },
+        { onConflict: 'id' } // <--- CRITICAL: This prevents doubles!
     );
     
     if (error) {
