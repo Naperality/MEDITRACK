@@ -30,11 +30,15 @@ export async function addMedication(formData: FormData, userId: string) {
 
 // Ensure this function is present and exported
 export async function toggleMedication(medId: number, currentState: boolean) {
+  // If we are marking it as taken, use the current time. 
+  // If we are unmarking it, set it to null.
+  const timeTaken = !currentState ? new Date().toISOString() : null;
+
   const { error } = await supabase
     .from('medications')
     .update({ 
       is_taken: !currentState,
-      last_taken_at: !currentState ? new Date().toISOString() : null 
+      last_taken_at: timeTaken 
     })
     .eq('id', medId);
 

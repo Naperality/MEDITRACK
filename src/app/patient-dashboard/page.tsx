@@ -6,19 +6,21 @@ import AddMedicationForm from "@/components/AddMedicationForm";
 
 export default async function PatientDashboard() {
   const { userId } = await auth();
-  
-  // Guard clause: Ensures userId is a string and not null
   if (!userId) return null;
 
   const { data: meds } = await supabase
     .from('medications')
     .select('*')
-    .eq('patient_id', userId);
+    .eq('patient_id', userId)
+    .order('scheduled_time', { ascending: true });
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">My Medications</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">My Medications</h1>
+          <p className="text-slate-500">Stay on track with your daily doses</p>
+        </div>
         <UserButton />
       </header>
 
@@ -27,30 +29,47 @@ export default async function PatientDashboard() {
       </div>
 
       <div className="grid gap-4">
-        {meds?.map((med) => (
-          <div key={med.id} className="p-4 bg-white shadow rounded-lg flex justify-between items-center border-l-4 border-blue-500">
-            <div>
-              <h3 className="font-bold text-lg">{med.name}</h3>
-              <p className="text-sm text-gray-500">{med.dosage} • {med.med_type}</p>
-              <p className="text-xs font-mono mt-1 text-blue-600">Time: {med.scheduled_time}</p>
+        {meds?.map((med) => {
+          const takenTimeDisplay = med.last_taken_at 
+            ? new Date(med.last_taken_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : null;
+
+          return (
+            <div key={med.id} className={`p-5 bg-white shadow-sm rounded-xl flex justify-between items-center border-l-4 transition-all ${med.is_taken ? 'border-green-500 opacity-80' : 'border-blue-500'}`}>
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">{med.name}</h3>
+                <p className="text-sm text-slate-500">{med.dosage} • {med.med_type}</p>
+                <div className="flex gap-4 mt-2">
+                   <p className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Scheduled: {med.scheduled_time}</p>
+                   {med.is_taken && (
+                     <p className="text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded">Taken at: {takenTimeDisplay}</p>
+                   )}
+                </div>
+              </div>
+              
+              <form action={async () => {
+                'use server';
+                await toggleMedication(med.id, med.is_taken);
+              }}>
+                <button 
+                  type="submit"
+                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+                    med.is_taken 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md active:scale-95'
+                  }`}
+                >
+                  {med.is_taken ? '✓ Done' : 'Mark as Taken'}
+                </button>
+              </form>
             </div>
-            
-            <form action={async () => {
-              'use server';
-              await toggleMedication(med.id, med.is_taken);
-            }}>
-              <button 
-                type="submit"
-                className={`px-4 py-2 rounded transition-colors ${
-                  med.is_taken ? 'bg-green-100 text-green-700' : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {med.is_taken ? '✓ Taken' : 'Mark as Taken'}
-              </button>
-            </form>
+          );
+        })}
+        {meds?.length === 0 && (
+          <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed">
+            <p className="text-gray-400">Your medication list is currently empty.</p>
           </div>
-        ))}
-        {meds?.length === 0 && <p className="text-gray-400">No medications scheduled.</p>}
+        )}
       </div>
     </div>
   );
