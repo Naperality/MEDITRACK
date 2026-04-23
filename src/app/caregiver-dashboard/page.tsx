@@ -68,9 +68,15 @@ export default async function CaregiverDashboard() {
 
             <div className="grid gap-3">
               {link.profiles.medications?.map((med: any) => {
+                // This ensures the UTC string from Supabase is converted to the user's local time 
                 const takenTime = med.last_taken_at 
-                  ? new Date(med.last_taken_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : null;
+                   ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: 'Asia/Manila' // Force it to Philippine Time for your capstone demo
+                      })
+                    : null;
 
                 return (
                   <div key={med.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
