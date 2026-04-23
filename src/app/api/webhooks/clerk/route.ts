@@ -55,18 +55,25 @@ export async function POST(req: Request) {
 
   // Handle the events
   if (evt.type === 'user.created' || evt.type === 'user.updated') {
+    // 1. Check if user already exists to preserve their role
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', id)
+      .single();
+
     const { error } = await supabase
-    .from('profiles')
-    .upsert(
+      .from('profiles')
+      .upsert(
         {
-        id: id,            // This matches the Clerk ID
-        email: email,
-        full_name: fullName,
-        // Note: We don't force 'PATIENT' here so we don't 
-        // accidentally overwrite an Admin back to a Patient
+          id: id,
+          email: email,
+          full_name: fullName,
+          // Use existing role if it exists, otherwise default to 'PATIENT'
+          role: existingUser?.role || 'PATIENT', 
         },
-        { onConflict: 'id' } // <--- CRITICAL: This prevents doubles!
-    );
+        { onConflict: 'id' }
+      );
     
     if (error) {
         console.error('Supabase Error:', error);
