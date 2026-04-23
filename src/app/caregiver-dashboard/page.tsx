@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabase } from "@/lib/supabase";
+import { UserButton } from "@clerk/nextjs";
 
 export default async function CaregiverDashboard() {
   const { userId } = await auth();
@@ -12,6 +13,10 @@ export default async function CaregiverDashboard() {
 
   return (
     <div className="p-8">
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">My Medications</h1>
+        <UserButton />
+      </header>
       <h1 className="text-2xl font-bold mb-6">Caregiver Portal</h1>
       <h2 className="text-lg font-semibold mb-4">My Patients</h2>
       <div className="space-y-6">
