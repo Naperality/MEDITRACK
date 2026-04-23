@@ -49,7 +49,9 @@ export async function POST(req: Request) {
   )
 
   // Extract data from the Clerk Event
-  const { id, email_addresses, first_name, last_name } = evt.data as any;
+  // Inside your route.ts, where you extract data:
+  const { id, email_addresses, first_name, last_name, unsafe_metadata } = evt.data as any;
+  const requestedRole = unsafe_metadata?.requested_role || 'PATIENT';
   const email = email_addresses[0]?.email_address;
   const fullName = `${first_name || ''} ${last_name || ''}`.trim();
 
@@ -70,7 +72,7 @@ export async function POST(req: Request) {
           email: email,
           full_name: fullName,
           // Use existing role if it exists, otherwise default to 'PATIENT'
-          role: existingUser?.role || 'PATIENT', 
+          role: existingUser?.role || requestedRole, 
         },
         { onConflict: 'id' }
       );

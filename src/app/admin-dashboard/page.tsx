@@ -2,11 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
+import { updateUserRole } from "@/app/actions/admin"; // Make sure this action exists
 
 export default async function AdminDashboard() {
   const { userId } = await auth();
 
-  // Security check: Verify the user is actually an ADMIN in Supabase
   const { data: adminProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -14,10 +14,9 @@ export default async function AdminDashboard() {
     .single();
 
   if (adminProfile?.role !== 'ADMIN') {
-    redirect('/dashboard'); // Kick them out if they aren't an admin
+    redirect('/dashboard');
   }
 
-  // Fetch all users to manage
   const { data: users } = await supabase
     .from('profiles')
     .select('*')
@@ -36,7 +35,7 @@ export default async function AdminDashboard() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Role</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -53,8 +52,27 @@ export default async function AdminDashboard() {
                     {user.role}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
-                  <button className="text-sm text-blue-600 hover:underline">Edit Role</button>
+                <td className="px-6 py-4 whitespace-nowrap text-right space-x-2 flex justify-end gap-2">
+                  {user.role !== 'CAREGIVER' && (
+                    <form action={async () => {
+                      'use server';
+                      await updateUserRole(user.id, 'CAREGIVER');
+                    }}>
+                      <button type="submit" className="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
+                        Promote to Caregiver
+                      </button>
+                    </form>
+                  )}
+                  {user.role !== 'ADMIN' && (
+                    <form action={async () => {
+                      'use server';
+                      await updateUserRole(user.id, 'ADMIN');
+                    }}>
+                      <button type="submit" className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                        Make Admin
+                      </button>
+                    </form>
+                  )}
                 </td>
               </tr>
             ))}
