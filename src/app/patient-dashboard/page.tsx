@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { toggleMedication } from "@/app/actions/medication";
 import AddMedicationForm from "@/components/AddMedicationForm";
+import { Clock, CheckCircle2, Pill, AlertCircle } from "lucide-react";
 
 export default async function PatientDashboard() {
   const { userId } = await auth();
@@ -15,67 +16,93 @@ export default async function PatientDashboard() {
     .order('scheduled_time', { ascending: true });
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">My Medications</h1>
-          <p className="text-slate-500">Stay on track with your daily doses</p>
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <header className="flex justify-between items-center mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">My Medications</h1>
+            <p className="text-slate-500 mt-1">Stay on track with your daily doses</p>
+          </div>
+          <div className="border p-1 rounded-full shadow-sm bg-white">
+            <UserButton />
+          </div>
+        </header>
+
+        <div className="mb-10 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+          <AddMedicationForm patientId={userId} />
         </div>
-        <UserButton />
-      </header>
 
-      <div className="mb-10">
-        <AddMedicationForm patientId={userId} />
-      </div>
+        <div className="grid gap-4">
+          {meds?.map((med) => {
+            const takenTimeDisplay = med.last_taken_at 
+              ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: true,
+                  timeZone: 'Asia/Manila'
+                })
+              : null;
 
-      <div className="grid gap-4">
-        {meds?.map((med) => {
-          // This ensures the UTC string from Supabase is converted to the user's local time
-          const takenTimeDisplay = med.last_taken_at 
-            ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: true,
-                timeZone: 'Asia/Manila' // Force it to Philippine Time for your capstone demo
-              })
-            : null;
+            return (
+              <div 
+                key={med.id} 
+                className={`group relative p-6 bg-white rounded-3xl border transition-all duration-300 ${
+                  med.is_taken ? 'border-green-100 bg-green-50/30' : 'border-slate-200 hover:shadow-lg'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4">
+                    <div className={`mt-1 p-3 rounded-2xl ${med.is_taken ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
+                      {med.is_taken ? <CheckCircle2 className="w-6 h-6" /> : <Pill className="w-6 h-6" />}
+                    </div>
+                    <div>
+                      <h3 className={`font-bold text-xl ${med.is_taken ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                        {med.name}
+                      </h3>
+                      <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mt-0.5">
+                        {med.dosage} • {med.med_type}
+                      </p>
+                      
+                      <div className="flex items-center gap-3 mt-4">
+                         <span className="flex items-center gap-1.5 text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg">
+                           <Clock className="w-3.5 h-3.5" /> {med.scheduled_time}
+                         </span>
+                         {med.is_taken && (
+                           <span className="flex items-center gap-1.5 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-lg">
+                             <CheckCircle2 className="w-3.5 h-3.5" /> Taken: {takenTimeDisplay}
+                           </span>
+                         )}
+                      </div>
+                    </div>
+                  </div>
 
-          return (
-            <div key={med.id} className={`p-5 bg-white shadow-sm rounded-xl flex justify-between items-center border-l-4 transition-all ${med.is_taken ? 'border-green-500 opacity-80' : 'border-blue-500'}`}>
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">{med.name}</h3>
-                <p className="text-sm text-slate-500">{med.dosage} • {med.med_type}</p>
-                <div className="flex gap-4 mt-2">
-                   <p className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Scheduled: {med.scheduled_time}</p>
-                   {med.is_taken && (
-                     <p className="text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded">Taken at: {takenTimeDisplay}</p>
-                   )}
+                  <form action={async () => {
+                    'use server';
+                    await toggleMedication(med.id, med.is_taken);
+                  }}>
+                    <button 
+                      type="submit"
+                      className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 ${
+                        med.is_taken 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-slate-900 text-white hover:bg-blue-600 hover:scale-105 active:scale-95 shadow-md'
+                      }`}
+                    >
+                      {med.is_taken ? '✓ Done' : 'Mark as Taken'}
+                    </button>
+                  </form>
                 </div>
               </div>
-              
-              <form action={async () => {
-                'use server';
-                await toggleMedication(med.id, med.is_taken);
-              }}>
-                <button 
-                  type="submit"
-                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
-                    med.is_taken 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md active:scale-95'
-                  }`}
-                >
-                  {med.is_taken ? '✓ Done' : 'Mark as Taken'}
-                </button>
-              </form>
+            );
+          })}
+          
+          {(!meds || meds.length === 0) && (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+              <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-400">Your medication list is currently empty.</p>
             </div>
-          );
-        })}
-        {meds?.length === 0 && (
-          <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed">
-            <p className="text-gray-400">Your medication list is currently empty.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
