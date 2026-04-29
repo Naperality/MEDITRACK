@@ -34,8 +34,6 @@ export default function RegisterPage() {
           <SignUp 
             routing="path" 
             path="/register" 
-            // CRITICAL: Send them to your sync logic after registration
-            forceRedirectUrl="/sync-user" 
             unsafeMetadata={{
               requested_role: "PATIENT" 
             }}

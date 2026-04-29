@@ -1,24 +1,26 @@
 'use server'
 
-import { auth } from "@clerk/nextjs/server";
-import { createClerkSupabaseClient } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
+
 import { revalidatePath } from "next/cache";
 
-export async function updateUserRole(targetUserId: string, newRole: string) {
-  const { getToken } = await auth();
-  const token = await getToken({ template: "supabase" });
-  if (!token) return { success: false };
+export async function updateUserRole(targetUserId: string, newRole: 'PATIENT' | 'CAREGIVER' | 'ADMIN') {
 
-  const supabase = createClerkSupabaseClient(token);
+
+
+
+
 
   const { error } = await supabase
     .from('profiles')
     .update({ role: newRole })
     .eq('id', targetUserId);
 
-  if (!error) {
-    revalidatePath('/admin-dashboard');
-    return { success: true };
+  if (error) {
+    console.error("Role update failed:", error.message);
+    return { success: false };
   }
-  return { success: false };
+
+  revalidatePath('/admin-dashboard');
+  return { success: true };
 }

@@ -42,7 +42,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <SignIn 
             signUpUrl="/register" 
-            forceRedirectUrl="/sync-user" // Redirect to a loading/sync page first
+            forceRedirectUrl="/dashboard"
             appearance={clerkTheme}
           />
         </div>
