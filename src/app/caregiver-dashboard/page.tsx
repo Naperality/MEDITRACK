@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { supabase } from "@/lib/supabase";
+import { createClerkSupabaseClient } from "@/lib/supabase";
 import { UserButton } from "@clerk/nextjs";
 import { linkPatient } from "@/app/actions/caregiver";
 import { toggleMedication } from "@/app/actions/medication";
@@ -7,8 +7,11 @@ import AddMedicationForm from "@/components/AddMedicationForm";
 import { UserPlus, Activity } from "lucide-react";
 
 export default async function CaregiverDashboard() {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const { userId, getToken } = await auth();
+  const token = await getToken({ template: "supabase" });
+  if (!userId || !token) return null;
+
+  const supabase = createClerkSupabaseClient(token);
 
   const { data: links } = await supabase
     .from('caregiver_patient')
@@ -17,13 +20,7 @@ export default async function CaregiverDashboard() {
       profiles!patient_id (
         full_name,
         medications (
-          id,
-          name,
-          dosage,
-          med_type,
-          scheduled_time,
-          is_taken,
-          last_taken_at
+          id, name, dosage, med_type, scheduled_time, is_taken, last_taken_at
         )
       )
     `)
@@ -40,7 +37,6 @@ export default async function CaregiverDashboard() {
           <UserButton />
         </header>
 
-        {/* Section to Link a New Patient */}
         <section className="mb-10 bg-gradient-to-r from-blue-600 to-indigo-600 p-8 rounded-3xl shadow-xl text-white">
           <div className="flex items-center gap-3 mb-6">
             <UserPlus className="w-6 h-6" />
@@ -51,23 +47,14 @@ export default async function CaregiverDashboard() {
             const email = formData.get('email') as string;
             await linkPatient(userId, email);
           }} className="flex gap-3">
-            <input 
-              name="email" 
-              type="email"
-              className="flex-1 p-4 rounded-xl text-slate-900 outline-none"
-              placeholder="Enter patient's email address..."
-              required
-            />
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-50">
-              Link Patient
-            </button>
+            <input name="email" type="email" className="flex-1 p-4 rounded-xl text-slate-900 outline-none" placeholder="Enter patient's email..." required />
+            <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-50">Link Patient</button>
           </form>
         </section>
 
         <div className="space-y-8">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-600" />
-            Linked Patients
+            <Activity className="w-5 h-5 text-blue-600" /> Linked Patients
           </h2>
           
           {links?.map((link: any) => (
@@ -77,7 +64,6 @@ export default async function CaregiverDashboard() {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border px-3 py-1 rounded-full">Live Syncing</span>
               </div>
               
-              {/* Form to add medication specifically for THIS patient */}
               <div className="p-6 border-b bg-slate-50/50">
                 <AddMedicationForm patientId={link.patient_id} />
               </div>
@@ -85,9 +71,8 @@ export default async function CaregiverDashboard() {
               <div className="p-2">
                 {link.profiles.medications?.map((med: any) => {
                   const takenTime = med.last_taken_at 
-                    ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
-                        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' 
-                      }) : null;
+                    ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' }) 
+                    : null;
 
                   return (
                     <div key={med.id} className="flex justify-between items-center p-5 hover:bg-slate-50 rounded-2xl">

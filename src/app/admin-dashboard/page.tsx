@@ -1,13 +1,19 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
+import { createClerkSupabaseClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import { updateUserRole } from "@/app/actions/admin";
 import { ShieldAlert, Users, UserCog, UserCheck, Search } from "lucide-react";
 
 export default async function AdminDashboard() {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
+  const token = await getToken({ template: "supabase" });
+  
+  if (!userId || !token) redirect('/sign-in');
 
+  const supabase = createClerkSupabaseClient(token);
+
+  // 1. Verify Admin Status
   const { data: adminProfile } = await supabase
     .from('profiles')
     .select('role')
@@ -18,6 +24,7 @@ export default async function AdminDashboard() {
     redirect('/dashboard');
   }
 
+  // 2. Fetch all users
   const { data: users } = await supabase
     .from('profiles')
     .select('*')
@@ -44,16 +51,8 @@ export default async function AdminDashboard() {
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <StatCard icon={<Users className="text-blue-600" />} label="Total Users" value={users?.length || 0} />
-          <StatCard 
-            icon={<UserCheck className="text-purple-600" />} 
-            label="Caregivers" 
-            value={users?.filter(u => u.role === 'CAREGIVER').length || 0} 
-          />
-          <StatCard 
-            icon={<ShieldAlert className="text-indigo-600" />} 
-            label="Admins" 
-            value={users?.filter(u => u.role === 'ADMIN').length || 0} 
-          />
+          <StatCard icon={<UserCheck className="text-purple-600" />} label="Caregivers" value={users?.filter(u => u.role === 'CAREGIVER').length || 0} />
+          <StatCard icon={<ShieldAlert className="text-indigo-600" />} label="Admins" value={users?.filter(u => u.role === 'ADMIN').length || 0} />
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -64,11 +63,7 @@ export default async function AdminDashboard() {
             </h2>
             <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                    type="text" 
-                    placeholder="Search users..." 
-                    className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition-all"
-                />
+                <input type="text" placeholder="Search users..." className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64 transition-all" />
             </div>
           </div>
 
@@ -141,7 +136,7 @@ export default async function AdminDashboard() {
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
     return (
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-indigo-200 transition-colors">
-        <div className="p-4 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform">
+        <div className="p-4 bg-slate-50 rounded-2xl transition-transform">
           {icon}
         </div>
         <div>

@@ -1,14 +1,16 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
+import { createClerkSupabaseClient } from "@/lib/supabase";
 import { toggleMedication } from "@/app/actions/medication";
 import AddMedicationForm from "@/components/AddMedicationForm";
 import { Clock, CheckCircle2, Pill, AlertCircle } from "lucide-react";
 
 export default async function PatientDashboard() {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const { userId, getToken } = await auth();
+  const token = await getToken({ template: "supabase" });
+  if (!userId || !token) return null;
 
+  const supabase = createClerkSupabaseClient(token);
   const { data: meds } = await supabase
     .from('medications')
     .select('*')
@@ -23,9 +25,7 @@ export default async function PatientDashboard() {
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">My Medications</h1>
             <p className="text-slate-500 mt-1">Stay on track with your daily doses</p>
           </div>
-          <div className="border p-1 rounded-full shadow-sm bg-white">
-            <UserButton />
-          </div>
+          <UserButton />
         </header>
 
         <div className="mb-10 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -35,43 +35,22 @@ export default async function PatientDashboard() {
         <div className="grid gap-4">
           {meds?.map((med) => {
             const takenTimeDisplay = med.last_taken_at 
-              ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: true,
-                  timeZone: 'Asia/Manila'
-                })
+              ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' })
               : null;
 
             return (
-              <div 
-                key={med.id} 
-                className={`group relative p-6 bg-white rounded-3xl border transition-all duration-300 ${
-                  med.is_taken ? 'border-green-100 bg-green-50/30' : 'border-slate-200 hover:shadow-lg'
-                }`}
-              >
+              <div key={med.id} className={`p-6 bg-white rounded-3xl border transition-all ${med.is_taken ? 'border-green-100 bg-green-50/30' : 'border-slate-200'}`}>
                 <div className="flex justify-between items-start">
                   <div className="flex gap-4">
                     <div className={`mt-1 p-3 rounded-2xl ${med.is_taken ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600'}`}>
                       {med.is_taken ? <CheckCircle2 className="w-6 h-6" /> : <Pill className="w-6 h-6" />}
                     </div>
                     <div>
-                      <h3 className={`font-bold text-xl ${med.is_taken ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
-                        {med.name}
-                      </h3>
-                      <p className="text-sm font-medium text-slate-500 uppercase tracking-wide mt-0.5">
-                        {med.dosage} • {med.med_type}
-                      </p>
-                      
+                      <h3 className={`font-bold text-xl ${med.is_taken ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{med.name}</h3>
+                      <p className="text-sm font-medium text-slate-500 uppercase mt-0.5">{med.dosage} • {med.med_type}</p>
                       <div className="flex items-center gap-3 mt-4">
-                         <span className="flex items-center gap-1.5 text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg">
-                           <Clock className="w-3.5 h-3.5" /> {med.scheduled_time}
-                         </span>
-                         {med.is_taken && (
-                           <span className="flex items-center gap-1.5 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-lg">
-                             <CheckCircle2 className="w-3.5 h-3.5" /> Taken: {takenTimeDisplay}
-                           </span>
-                         )}
+                         <span className="flex items-center gap-1.5 text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg"><Clock className="w-3.5 h-3.5" /> {med.scheduled_time}</span>
+                         {med.is_taken && <span className="flex items-center gap-1.5 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-lg"><CheckCircle2 className="w-3.5 h-3.5" /> Taken: {takenTimeDisplay}</span>}
                       </div>
                     </div>
                   </div>
@@ -80,14 +59,7 @@ export default async function PatientDashboard() {
                     'use server';
                     await toggleMedication(med.id, med.is_taken);
                   }}>
-                    <button 
-                      type="submit"
-                      className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 ${
-                        med.is_taken 
-                          ? 'bg-green-600 text-white' 
-                          : 'bg-slate-900 text-white hover:bg-blue-600 hover:scale-105 active:scale-95 shadow-md'
-                      }`}
-                    >
+                    <button type="submit" className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all ${med.is_taken ? 'bg-green-600 text-white' : 'bg-slate-900 text-white shadow-md'}`}>
                       {med.is_taken ? '✓ Done' : 'Mark as Taken'}
                     </button>
                   </form>
