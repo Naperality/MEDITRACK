@@ -41,7 +41,9 @@ export default async function CaregiverDashboard() {
             <UserButton />
           </div>
         </header>
-
+        <div className="mb-10 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                  <AddMedicationForm patientId={userId} />
+        </div>
         <section className="mb-10 bg-gradient-to-r from-blue-600 to-indigo-600 p-8 rounded-3xl shadow-xl shadow-blue-100 text-white">
           <div className="flex items-center gap-3 mb-6">
             <UserPlus className="w-6 h-6" />
