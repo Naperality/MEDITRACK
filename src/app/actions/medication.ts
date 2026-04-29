@@ -3,7 +3,7 @@
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
-export async function addMedication(formData: FormData, userId: string) {
+export async function addMedication(formData: FormData, patientId: string) {
   const name = formData.get("name") as string;
   const dosage = formData.get("dosage") as string;
   const med_type = formData.get("med_type") as string;
@@ -12,7 +12,7 @@ export async function addMedication(formData: FormData, userId: string) {
   const { error } = await supabase
     .from('medications')
     .insert({
-      patient_id: userId,
+      patient_id: patientId, // Correctly uses the target patient's ID
       name,
       dosage,
       med_type,
@@ -21,17 +21,16 @@ export async function addMedication(formData: FormData, userId: string) {
     });
 
   if (!error) {
-    revalidatePath('/patient-dashboard');
+    // Revalidate paths to refresh the UI immediately
     revalidatePath('/caregiver-dashboard');
     return { success: true };
   }
+  
+  console.error("Insert error:", error.message);
   return { error: error.message };
 }
 
-// Ensure this function is present and exported
 export async function toggleMedication(medId: number, currentState: boolean) {
-  // If we are marking it as taken, use the current time. 
-  // If we are unmarking it, set it to null.
   const timeTaken = !currentState ? new Date().toISOString() : null;
 
   const { error } = await supabase
@@ -42,10 +41,7 @@ export async function toggleMedication(medId: number, currentState: boolean) {
     })
     .eq('id', medId);
 
-  if (error) {
-    console.error("Toggle error:", error.message);
-  } else {
-    revalidatePath('/patient-dashboard');
+  if (!error) {
     revalidatePath('/caregiver-dashboard');
   }
 }
