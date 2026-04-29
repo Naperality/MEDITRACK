@@ -5,6 +5,7 @@ const isProtectedRoute = createRouteMatcher([
   '/patient-dashboard(.*)',
   '/caregiver-dashboard(.*)',
   '/admin-dashboard(.*)',
+  '/sync-user(.*)',
 ]);
 
 // 2. Define which routes are "Public" (including the webhook!)
