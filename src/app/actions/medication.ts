@@ -7,11 +7,13 @@ export async function addMedication(formData: FormData, patientId: string) {
   const name = formData.get("name") as string;
   const dosage = formData.get("dosage") as string;
   const med_type = formData.get("med_type") as string;
-  const frequency = formData.get("frequency") as string;
-  const scheduled_time = formData.get("scheduled_time") as string;
+  const daily_count = parseInt(formData.get("daily_count") as string);
   const start_date = formData.get("start_date") as string;
   const end_date = formData.get("end_date") as string;
   const instructions = formData.get("instructions") as string;
+
+  // Collect all scheduled times from the dynamic inputs
+  const scheduled_times = formData.getAll("scheduled_times") as string[];
 
   const { error } = await supabase
     .from('medications')
@@ -20,8 +22,8 @@ export async function addMedication(formData: FormData, patientId: string) {
       name,
       dosage,
       med_type,
-      frequency,
-      scheduled_time,
+      daily_count,
+      scheduled_times, // Array of times
       start_date,
       end_date,
       instructions,
