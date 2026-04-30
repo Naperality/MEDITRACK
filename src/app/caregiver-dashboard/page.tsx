@@ -134,20 +134,18 @@ export default async function CaregiverDashboard() {
                           </div>
                         </div>
 
-                        <form action={async () => {
-                          'use server';
-                          await recordMedicationAction(med.id, link.patient_id, med.name);
-                        }}>
-                          <button 
-                            disabled={med.is_taken}
-                            className={`w-full md:w-auto px-6 py-3 rounded-2xl font-black text-xs uppercase transition-all ${
-                            med.is_taken 
-                              ? 'bg-green-600 text-white cursor-default' 
-                              : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-500'
-                          }`}>
-                            {med.is_taken ? 'Taken' : 'Mark as Taken'}
-                          </button>
-                        </form>
+                        {/* REPLACE WITH THIS (Visual Status Only) */}
+                        <div className="flex items-center gap-2">
+                          {med.is_taken ? (
+                            <span className="flex items-center gap-1.5 bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-black uppercase">
+                              <CheckCircle2 className="w-4 h-4" /> Taken
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-xs font-black uppercase border border-amber-100">
+                              <Clock className="w-4 h-4" /> Pending
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
