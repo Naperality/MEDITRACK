@@ -93,3 +93,46 @@ export async function deleteMedication(medId: number) {
     return { success: true };
   }
 }
+export async function syncMissedDoses(meds: any[], patientId: string) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  
+  // 1. Get all logs for today to avoid duplicates
+  const { data: existingLogs } = await supabase
+    .from('medication_logs')
+    .select('med_id, scheduled_slot')
+    .eq('patient_id', patientId)
+    .gte('logged_at', `${todayStr}T00:00:00`);
+
+  const logsToInsert = [];
+
+  for (const med of meds) {
+    for (const slot of med.scheduled_times) {
+      // Create a date object for the slot time
+      const [hours, minutes] = slot.split(':');
+      const slotTime = new Date();
+      slotTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      // If slot time is in the past AND no log exists for it
+      const alreadyLogged = existingLogs?.some(
+        l => l.med_id === med.id && l.scheduled_slot === slot
+      );
+
+      if (slotTime < now && !alreadyLogged) {
+        logsToInsert.push({
+          med_id: med.id,
+          patient_id: patientId,
+          med_name: med.name,
+          status: 'MISSED',
+          logged_at: slotTime.toISOString(), // Log it at the time it was supposed to happen
+          scheduled_slot: slot
+        });
+      }
+    }
+  }
+
+  if (logsToInsert.length > 0) {
+    await supabase.from('medication_logs').insert(logsToInsert);
+    revalidatePath('/patient-dashboard');
+  }
+}

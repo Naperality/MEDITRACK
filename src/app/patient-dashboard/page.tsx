@@ -1,19 +1,19 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
-import { recordMedicationAction } from "@/app/actions/medication";
+import { syncMissedDoses } from "@/app/actions/medication"; // Import the sync action
 import MedicationReminder from "@/components/MedicationReminder";
+import MedicationSlot from "@/components/MedicationSlot"; // Import your new client component
 import { 
-  Clock, CheckCircle2, Pill, AlertCircle, 
-  Calendar, FileText, AlertTriangle, History, 
-  Activity, ArrowRight
+  Clock, Pill, Calendar, FileText, 
+  History, Activity, CheckCircle2, AlertCircle
 } from "lucide-react";
 
 export default async function PatientDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  // Get start of today to filter logs for slot-checking
+  // Get start of today for initial data fetch
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -24,14 +24,20 @@ export default async function PatientDashboard() {
     .eq('patient_id', userId)
     .order('created_at', { ascending: false });
 
-  // 2. Fetch Today's Logs (Crucial for checking specific slots)
+  // 2. Trigger Proactive Sync
+  // This automatically marks missed doses in the DB if they aren't there yet
+  if (meds && meds.length > 0) {
+    await syncMissedDoses(meds, userId);
+  }
+
+  // 3. Fetch Today's Logs (re-fetch after sync to get updated "MISSED" statuses)
   const { data: todaysLogs } = await supabase
     .from('medication_logs')
     .select('*')
     .eq('patient_id', userId)
     .gte('logged_at', todayStart.toISOString());
 
-  // 3. Fetch Recent Logs for the Sidebar History
+  // 4. Fetch Recent Logs for History Sidebar
   const { data: recentLogs } = await supabase
     .from('medication_logs')
     .select('*')
@@ -41,7 +47,6 @@ export default async function PatientDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 lg:p-12">
-      {/* Live Pop-up Reminders */}
       <MedicationReminder meds={meds || []} todaysLogs={todaysLogs || []} />
 
       <div className="max-w-5xl mx-auto">
@@ -52,7 +57,7 @@ export default async function PatientDashboard() {
               <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">v2.0</span>
             </div>
             <h1 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">My Health</h1>
-            <p className="text-slate-500 mt-2 font-medium">MediTrack: Your personalized recovery companion</p>
+            <p className="text-slate-500 mt-2 font-medium">MediTrack: Proactive Recovery Companion</p>
           </div>
           <div className="flex items-center gap-4 bg-white p-2 rounded-3xl shadow-sm border border-slate-100">
             <div className="text-right hidden md:block px-2">
@@ -94,37 +99,25 @@ export default async function PatientDashboard() {
                     </div>
                   </div>
 
-                  {/* Daily Schedule Slots */}
+                  {/* PROACTIVE SLOTS: Uses the client component for real-time logic */}
                   <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-2">
-                        <Clock className="w-3 h-3" /> Select time to record dose:
+                        <Clock className="w-3 h-3" /> Daily Schedule:
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      {med.scheduled_times.map((time: string) => {
-                        const isSlotTaken = todaysLogs?.some(log => 
-                          log.med_id === med.id && log.scheduled_slot === time
-                        );
-
-                        return (
-                          <form key={time} action={async () => {
-                            'use server';
-                            await recordMedicationAction(med.id, userId, med.name, time);
-                          }}>
-                            <button
-                              type="submit"
-                              disabled={isSlotTaken}
-                              className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${
-                                isSlotTaken 
-                                ? 'bg-green-100 border-green-200 text-green-700 cursor-default' 
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 active:scale-95'
-                              }`}
-                            >
-                              {isSlotTaken ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4 text-slate-300" />}
-                              {time}
-                            </button>
-                          </form>
-                        );
-                      })}
+                      {med.scheduled_times.map((time: string) => (
+                        <MedicationSlot 
+                          key={time}
+                          med={med}
+                          time={time}
+                          userId={userId}
+                          isTaken={todaysLogs?.some(log => 
+                            log.med_id === med.id && 
+                            log.scheduled_slot === time && 
+                            log.status === 'TAKEN'
+                          )}
+                        />
+                      ))}
                     </div>
                   </div>
 
@@ -161,15 +154,19 @@ export default async function PatientDashboard() {
                 <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-50">
                     {recentLogs?.map((log) => (
                         <div key={log.id} className="relative pl-10 group">
-                            <div className="absolute left-0 top-0 w-10 h-10 rounded-2xl flex items-center justify-center z-10 bg-green-100 text-green-600">
-                                <CheckCircle2 className="w-5 h-5" />
+                            <div className={`absolute left-0 top-0 w-10 h-10 rounded-2xl flex items-center justify-center z-10 ${
+                              log.status === 'TAKEN' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                            }`}>
+                                {log.status === 'TAKEN' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                             </div>
                             <div>
                                 <p className="text-sm font-black text-slate-800 leading-tight">{log.med_name}</p>
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
                                     <span>{new Date(log.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}</span>
                                     <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                                    <span>Slot: {log.scheduled_slot}</span>
+                                    <span className={log.status === 'MISSED' ? 'text-red-500' : ''}>
+                                      {log.status === 'TAKEN' ? `Slot: ${log.scheduled_slot}` : 'MISSED'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
