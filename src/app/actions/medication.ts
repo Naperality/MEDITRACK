@@ -95,14 +95,16 @@ export async function deleteMedication(medId: number) {
 }
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const offset = now.getTimezoneOffset() * 60000;
+  const localISOTime = new Date(now.getTime() - offset).toISOString();
+  const todayStr = localISOTime.split('T')[0];
   
   // 1. Get all logs for today to avoid duplicates
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot')
     .eq('patient_id', patientId)
-    .gte('logged_at', `${todayStr}T00:00:00`);
+    .gte('logged_at', `${todayStr}T00:00:00.000Z`);
 
   const logsToInsert = [];
 
