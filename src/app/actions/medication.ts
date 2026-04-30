@@ -99,32 +99,39 @@ export async function deleteMedication(medId: number) {
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const now = new Date();
+  console.log("--- START SYNC MISSED DOSES ---");
+  console.log("Current Time (Server):", now.toLocaleString());
   
-  // To handle the "Midnight Problem," we check logs from the last 24 hours.
-  // This ensures that if it's 1:00 AM, we still see the 10:00 PM dose from "yesterday".
   const lookbackPeriod = new Date();
   lookbackPeriod.setHours(lookbackPeriod.getHours() - 24);
   
-  // 1. Get all logs (TAKEN or MISSED) from the last 24 hours
-  const { data: existingLogs } = await supabase
+  // 1. Get all logs from the last 24 hours
+  const { data: existingLogs, error: fetchError } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
     .eq('patient_id', patientId)
     .gte('logged_at', lookbackPeriod.toISOString());
 
+  if (fetchError) {
+    console.error("Supabase Fetch Error:", fetchError.message);
+  }
+
+  console.log(`Found ${existingLogs?.length || 0} existing logs in the last 24h.`);
+
   const logsToInsert = [];
 
   for (const med of meds) {
+    console.log(`Checking Medication: ${med.name} (ID: ${med.id})`);
+
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':');
       
-      // We check the slot for "Today"
       const slotTime = new Date();
       slotTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // If it is early morning (00:00 - 04:00), we also check the slot for "Yesterday"
-      // because the user might be looking for a dose they missed right before bed.
       const timesToCheck = [slotTime];
+      
+      // Look back at yesterday if it's early morning
       if (now.getHours() < 4) {
         const yesterdaySlot = new Date(slotTime);
         yesterdaySlot.setDate(yesterdaySlot.getDate() - 1);
@@ -134,15 +141,18 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
       for (const checkTime of timesToCheck) {
         const isPast = checkTime < now;
         
-        // Check if a log already exists for this medication AND this specific slot time
         const alreadyLogged = existingLogs?.some(l => {
           const logDate = new Date(l.logged_at);
+          // Precise logging for the check
           return l.med_id === med.id && 
                  l.scheduled_slot === slot && 
                  logDate.toDateString() === checkTime.toDateString();
         });
 
+        console.log(` > Slot: ${slot} | Target Date: ${checkTime.toDateString()} | isPast: ${isPast} | alreadyLogged: ${alreadyLogged}`);
+
         if (isPast && !alreadyLogged) {
+          console.log(` >>> MATCH FOUND: Queueing MISSED log for ${med.name} at ${slot}`);
           logsToInsert.push({
             med_id: med.id,
             patient_id: patientId,
@@ -156,11 +166,21 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     }
   }
 
+  console.log(`Total logs queued for insertion: ${logsToInsert.length}`);
+
   if (logsToInsert.length > 0) {
-    const { error } = await supabase.from('medication_logs').insert(logsToInsert);
-    if (!error) {
+    const { error: insertError } = await supabase.from('medication_logs').insert(logsToInsert);
+    
+    if (insertError) {
+      console.error("Supabase Insert Error:", insertError.message);
+    } else {
+      console.log("Successfully inserted missed doses to database.");
       revalidatePath('/patient-dashboard');
       revalidatePath('/caregiver-dashboard');
     }
+  } else {
+    console.log("No new missed doses to sync.");
   }
+  
+  console.log("--- END SYNC MISSED DOSES ---");
 }
