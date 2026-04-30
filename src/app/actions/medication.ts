@@ -28,7 +28,7 @@ export async function addMedication(formData: FormData, patientId: string) {
       start_date,
       end_date,
       instructions,
-      is_taken: false // Default to false for new prescriptions
+      is_taken: false 
     });
 
   if (!error) {
@@ -41,13 +41,13 @@ export async function addMedication(formData: FormData, patientId: string) {
 }
 
 /**
- * 2. RECORD MEDICATION ACTION (Used by Patient)
- * This handles BOTH the status update and the History Log entry.
+ * 2. RECORD MEDICATION ACTION (Used by Patient or Caregiver)
+ * Updated to match the 'med_id' column in your medication_logs table.
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string) {
   const now = new Date().toISOString();
 
-  // Step A: Update the main medication status to "Taken"
+  // Step A: Update the main medication status
   const { error: updateError } = await supabase
     .from('medications')
     .update({ 
@@ -61,12 +61,11 @@ export async function recordMedicationAction(medId: number, patientId: string, m
     return;
   }
 
-  // Step B: Insert a permanent record into the 'medication_logs' table
-  // This allows the Patient Dashboard to show the History Log sidebar.
+  // Step B: Insert log entry using your schema's 'med_id' column
   const { error: logError } = await supabase
     .from('medication_logs')
     .insert({
-      medication_id: medId,
+      med_id: medId, // Matched to image_e44f35.png
       patient_id: patientId,
       med_name: medName,
       status: 'TAKEN',
@@ -77,13 +76,13 @@ export async function recordMedicationAction(medId: number, patientId: string, m
     console.error("Logging error:", logError.message);
   }
 
-  // Refresh both dashboards to show updated status and new log
+  // Refreshing ensures the Activity Logs sidebar updates immediately
   revalidatePath('/caregiver-dashboard');
   revalidatePath('/patient-dashboard');
 }
 
 /**
- * 3. DELETE MEDICATION (Optional Utility)
+ * 3. DELETE MEDICATION
  */
 export async function deleteMedication(medId: number) {
   const { error } = await supabase
