@@ -2,35 +2,51 @@ import { auth } from "@clerk/nextjs/server";
 import { supabase } from "@/lib/supabase";
 import { UserButton } from "@clerk/nextjs";
 import { linkPatient } from "@/app/actions/caregiver";
-import { recordMedicationAction } from "@/app/actions/medication";
+import { syncMissedDoses } from "@/app/actions/medication";
 import AddMedicationForm from "@/components/AddMedicationForm";
 import { 
   UserPlus, Activity, CheckCircle2, Clock, 
-  Calendar, AlertCircle, History, Pill 
+  History, Pill 
 } from "lucide-react";
 
 export default async function CaregiverDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  // FETCH: Uses explicit foreign key joins (!) to ensure data shows even if logs are empty.
-  // Note: We alias 'medication_logs' to 'logs' for cleaner mapping.
+  // 1. FETCH: Retrieve links and nested profile/medication data
   const { data: links, error } = await supabase
     .from('caregiver_patient')
     .select(`
       patient_id,
       profiles:patient_id (
         full_name,
-        medications:medications!patient_id (
+        medications (
           id, name, dosage, med_type, scheduled_times, 
           daily_count, is_taken, last_taken_at, start_date, end_date
-        ),
-        logs:medication_logs!patient_id (
-          id, med_name, status, logged_at
         )
       )
     `)
     .eq('caregiver_id', userId);
+
+  // 2. TRIGGER SYNC: Update database for missed doses before displaying logs
+  if (links) {
+    await Promise.all(
+      links.map(link => {
+        // Handle Supabase returning joined records as an array
+        const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+        return profile?.medications 
+          ? syncMissedDoses(profile.medications, link.patient_id) 
+          : Promise.resolve();
+      })
+    );
+  }
+
+  // 3. FETCH LOGS: Separate fetch to catch the newly created 'MISSED' logs from the sync above
+  const { data: allLogs } = await supabase
+    .from('medication_logs')
+    .select('*')
+    .in('patient_id', links?.map(l => l.patient_id) || [])
+    .order('logged_at', { ascending: false });
 
   if (error) {
     console.error("Supabase Fetch Error:", error.message);
@@ -81,107 +97,118 @@ export default async function CaregiverDashboard() {
             Active Patient Records
           </h2>
           
-          {links?.map((link: any) => (
-            <div key={link.patient_id} className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col lg:flex-row">
-              
-              {/* LEFT SIDE: Patient Info & Meds */}
-              <div className="flex-1 p-8 lg:border-r border-slate-100">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-100">
-                      {link.profiles?.full_name?.charAt(0) || 'P'}
-                    </div>
-                    <div>
-                      <h3 className="font-black text-2xl text-slate-900">{link.profiles?.full_name}</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {link.patient_id.slice(0,12)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black text-green-700 uppercase">Live Feed</span>
-                  </div>
-                </div>
+          {links?.map((link: any) => {
+            // Normalize profile and filter logs for this specific patient
+            const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+            const patientLogs = allLogs?.filter(log => log.patient_id === link.patient_id) || [];
 
-                <div className="mb-10 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                  <h4 className="text-xs font-black text-slate-400 uppercase mb-4">Prescribe Medication</h4>
-                  <AddMedicationForm patientId={link.patient_id} />
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Pill className="w-4 h-4" /> Current Medications
-                  </h4>
-                  
-                  {link.profiles?.medications?.map((med: any) => (
-                    <div key={med.id} className={`p-6 rounded-[2rem] border transition-all ${
-                      med.is_taken ? 'bg-green-50/30 border-green-100' : 'bg-white border-slate-100 shadow-sm'
-                    }`}>
-                      <div className="flex flex-col md:flex-row justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <p className="font-black text-slate-800 text-lg">{med.name}</p>
-                            <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase">
-                              {med.med_type}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2">
-                            {med.scheduled_times?.map((t: string, i: number) => (
-                              <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-lg flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* REPLACE WITH THIS (Visual Status Only) */}
-                        <div className="flex items-center gap-2">
-                          {med.is_taken ? (
-                            <span className="flex items-center gap-1.5 bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-black uppercase">
-                              <CheckCircle2 className="w-4 h-4" /> Taken
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-xs font-black uppercase border border-amber-100">
-                              <Clock className="w-4 h-4" /> Pending
-                            </span>
-                          )}
-                        </div>
+            return (
+              <div key={link.patient_id} className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col lg:flex-row">
+                
+                {/* LEFT SIDE: Patient Info & Meds */}
+                <div className="flex-1 p-8 lg:border-r border-slate-100">
+                  <div className="flex justify-between items-start mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-100">
+                        {profile?.full_name?.charAt(0) || 'P'}
+                      </div>
+                      <div>
+                        <h3 className="font-black text-2xl text-slate-900">{profile?.full_name}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {link.patient_id.slice(0,12)}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* RIGHT SIDE: Activity History (Side Scroll/List) */}
-              <div className="w-full lg:w-80 bg-slate-50/50 p-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <History className="w-5 h-5 text-blue-600" />
-                  <h4 className="font-black text-slate-800 text-sm uppercase tracking-tighter">History</h4>
-                </div>
-
-                <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
-                  {link.profiles?.logs?.sort((a: any, b: any) => 
-                    new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
-                  ).map((log: any) => (
-                    <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500" />
-                      <p className="text-xs font-black text-slate-800">{log.med_name}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-1">
-                        {new Date(log.logged_at).toLocaleString('en-PH', {
-                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                        })}
-                      </p>
+                    <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black text-green-700 uppercase">Live Feed</span>
                     </div>
-                  ))}
-                  
-                  {(!link.profiles?.logs || link.profiles.logs.length === 0) && (
-                    <p className="text-[10px] font-bold text-slate-300 text-center py-10 uppercase tracking-widest">No logs yet</p>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-            </div>
-          ))}
+                  <div className="mb-10 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <h4 className="text-xs font-black text-slate-400 uppercase mb-4">Prescribe Medication</h4>
+                    <AddMedicationForm patientId={link.patient_id} />
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Pill className="w-4 h-4" /> Current Medications
+                    </h4>
+                    
+                    {profile?.medications?.map((med: any) => (
+                      <div key={med.id} className={`p-6 rounded-[2rem] border transition-all ${
+                        med.is_taken ? 'bg-green-50/30 border-green-100' : 'bg-white border-slate-100 shadow-sm'
+                      }`}>
+                        <div className="flex flex-col md:flex-row justify-between gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <p className="font-black text-slate-800 text-lg">{med.name}</p>
+                              <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase">
+                                {med.med_type}
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              {med.scheduled_times?.map((t: string, i: number) => (
+                                <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-lg flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> {t}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {med.is_taken ? (
+                              <span className="flex items-center gap-1.5 bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-black uppercase">
+                                <CheckCircle2 className="w-4 h-4" /> Taken
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-xs font-black uppercase border border-amber-100">
+                                <Clock className="w-4 h-4" /> Pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* RIGHT SIDE: Activity History */}
+                <div className="w-full lg:w-80 bg-slate-50/50 p-8">
+                  <div className="flex items-center gap-2 mb-6">
+                    <History className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-black text-slate-800 text-sm uppercase tracking-tighter">History</h4>
+                  </div>
+
+                  <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+                    {patientLogs.map((log: any) => (
+                      <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        {/* Red bar for Missed, Green bar for Taken */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${log.status === 'MISSED' ? 'bg-red-500' : 'bg-green-500'}`} />
+                        <div className="flex justify-between items-start">
+                          <p className="text-xs font-black text-slate-800">{log.med_name}</p>
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
+                            log.status === 'MISSED' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                          }`}>
+                            {log.status}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1">
+                          {new Date(log.logged_at).toLocaleString('en-PH', {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                    
+                    {patientLogs.length === 0 && (
+                      <p className="text-[10px] font-bold text-slate-300 text-center py-10 uppercase tracking-widest">No logs yet</p>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
 
           {(!links || links.length === 0) && (
             <div className="text-center py-24 bg-white rounded-[3rem] border-4 border-dashed border-slate-100">
