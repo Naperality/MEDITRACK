@@ -12,11 +12,6 @@ import {
 export default async function PatientDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
-
-  // Get start of today for initial data fetch
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
   // 1. Fetch Medications
   const { data: meds } = await supabase
     .from('medications')
@@ -37,7 +32,7 @@ export default async function PatientDashboard() {
     .from('medication_logs')
     .select('*')
     .eq('patient_id', userId)
-    .gte('logged_at', todayStart.toISOString());
+    .gte('logged_at', yesterday.toISOString());
 
   // 4. Fetch Recent Logs for History Sidebar
   const { data: recentLogs } = await supabase
