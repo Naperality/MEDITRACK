@@ -114,29 +114,43 @@ export default async function CaregiverDashboard() {
                     }`}>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                           <p className="font-black text-slate-800 text-lg">{med.name}</p>
-                           <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                             {med.daily_count}x / Day
-                           </span>
+                          <p className="font-black text-slate-800 text-lg">{med.name}</p>
+                          <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                            {med.daily_count}x / Day
+                          </span>
                         </div>
                         <p className="text-xs font-bold text-slate-400 uppercase mb-3">{med.dosage} • {med.med_type}</p>
                         
+                        {/* Schedule Chips */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                           {med.scheduled_times?.map((t: string, i: number) => (
-                             <span key={i} className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1">
-                               <Clock className="w-3 h-3 text-blue-500" /> {t}
-                             </span>
-                           ))}
+                          {med.scheduled_times?.map((t: string, i: number) => (
+                            <span key={i} className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-blue-500" /> {t}
+                            </span>
+                          ))}
                         </div>
 
-                        <div className="flex items-center gap-4 text-[11px] font-bold text-slate-500">
-                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> End: {new Date(med.end_date).toLocaleDateString()}</span>
-                          {med.is_taken && (
-                            <span className="flex items-center gap-1 text-green-600 bg-green-100 px-2 py-0.5 rounded-md">
-                              <CheckCircle2 className="w-3 h-3" /> Recorded at {takenTime}
-                            </span>
-                          )}
+                        {/* NEW: Responsive Date Labels */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 border-t border-slate-100 pt-4">
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                            <span className="text-slate-400 uppercase tracking-tighter">Start:</span>
+                            <span>{new Date(med.start_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="text-slate-400 uppercase tracking-tighter">End:</span>
+                            <span>{new Date(med.end_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
                         </div>
+
+                        {/* Taken Status Label */}
+                        {med.is_taken && (
+                          <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-green-600 bg-green-50 w-fit px-2 py-1 rounded-md">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> 
+                            Recorded at {takenTime}
+                          </div>
+                        )}
                       </div>
 
                       <form action={async () => {
