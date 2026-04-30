@@ -33,6 +33,7 @@ export async function addMedication(formData: FormData, patientId: string) {
 
   if (!error) {
     revalidatePath('/caregiver-dashboard');
+    revalidatePath('/patient-dashboard'); // Added to sync patient side too
     return { success: true };
   }
   
@@ -42,7 +43,6 @@ export async function addMedication(formData: FormData, patientId: string) {
 
 /**
  * 2. RECORD MEDICATION ACTION
- * Updated to require the specific scheduledTime slot.
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
   const now = new Date().toISOString();
@@ -74,7 +74,6 @@ export async function recordMedicationAction(medId: number, patientId: string, m
     console.error("Logging error:", logError.message);
   }
 
-  // Refresh both dashboards to reflect the new log
   revalidatePath('/caregiver-dashboard');
   revalidatePath('/patient-dashboard');
 }
@@ -90,51 +89,78 @@ export async function deleteMedication(medId: number) {
 
   if (!error) {
     revalidatePath('/caregiver-dashboard');
+    revalidatePath('/patient-dashboard');
     return { success: true };
   }
 }
+
+/**
+ * 4. SYNC MISSED DOSES (The Proactive Engine)
+ */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localISOTime = new Date(now.getTime() - offset).toISOString();
-  const todayStr = localISOTime.split('T')[0];
   
-  // 1. Get all logs for today to avoid duplicates
+  // To handle the "Midnight Problem," we check logs from the last 24 hours.
+  // This ensures that if it's 1:00 AM, we still see the 10:00 PM dose from "yesterday".
+  const lookbackPeriod = new Date();
+  lookbackPeriod.setHours(lookbackPeriod.getHours() - 24);
+  
+  // 1. Get all logs (TAKEN or MISSED) from the last 24 hours
   const { data: existingLogs } = await supabase
     .from('medication_logs')
-    .select('med_id, scheduled_slot')
+    .select('med_id, scheduled_slot, logged_at')
     .eq('patient_id', patientId)
-    .gte('logged_at', `${todayStr}T00:00:00.000Z`);
+    .gte('logged_at', lookbackPeriod.toISOString());
 
   const logsToInsert = [];
 
   for (const med of meds) {
     for (const slot of med.scheduled_times) {
-      // Create a date object for the slot time
       const [hours, minutes] = slot.split(':');
+      
+      // We check the slot for "Today"
       const slotTime = new Date();
       slotTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // If slot time is in the past AND no log exists for it
-      const alreadyLogged = existingLogs?.some(
-        l => l.med_id === med.id && l.scheduled_slot === slot
-      );
+      // If it is early morning (00:00 - 04:00), we also check the slot for "Yesterday"
+      // because the user might be looking for a dose they missed right before bed.
+      const timesToCheck = [slotTime];
+      if (now.getHours() < 4) {
+        const yesterdaySlot = new Date(slotTime);
+        yesterdaySlot.setDate(yesterdaySlot.getDate() - 1);
+        timesToCheck.push(yesterdaySlot);
+      }
 
-      if (slotTime < now && !alreadyLogged) {
-        logsToInsert.push({
-          med_id: med.id,
-          patient_id: patientId,
-          med_name: med.name,
-          status: 'MISSED',
-          logged_at: slotTime.toISOString(), // Log it at the time it was supposed to happen
-          scheduled_slot: slot
+      for (const checkTime of timesToCheck) {
+        const isPast = checkTime < now;
+        
+        // Check if a log already exists for this medication AND this specific slot time
+        const alreadyLogged = existingLogs?.some(l => {
+          const logDate = new Date(l.logged_at);
+          return l.med_id === med.id && 
+                 l.scheduled_slot === slot && 
+                 logDate.toDateString() === checkTime.toDateString();
         });
+
+        if (isPast && !alreadyLogged) {
+          logsToInsert.push({
+            med_id: med.id,
+            patient_id: patientId,
+            med_name: med.name,
+            status: 'MISSED',
+            logged_at: checkTime.toISOString(),
+            scheduled_slot: slot
+          });
+        }
       }
     }
   }
 
   if (logsToInsert.length > 0) {
-    await supabase.from('medication_logs').insert(logsToInsert);
-    revalidatePath('/patient-dashboard');
+    const { error } = await supabase.from('medication_logs').insert(logsToInsert);
+    if (!error) {
+      revalidatePath('/patient-dashboard');
+      revalidatePath('/caregiver-dashboard');
+    }
   }
 }

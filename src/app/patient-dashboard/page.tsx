@@ -31,6 +31,8 @@ export default async function PatientDashboard() {
   }
 
   // 3. Fetch Today's Logs (re-fetch after sync to get updated "MISSED" statuses)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
   const { data: todaysLogs } = await supabase
     .from('medication_logs')
     .select('*')
