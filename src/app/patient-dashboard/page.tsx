@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { toggleMedication } from "@/app/actions/medication";
-import AddMedicationForm from "@/components/AddMedicationForm";
 import { Clock, CheckCircle2, Pill, AlertCircle } from "lucide-react";
 
 export default async function PatientDashboard() {
@@ -28,9 +27,7 @@ export default async function PatientDashboard() {
           </div>
         </header>
 
-        <div className="mb-10 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-          <AddMedicationForm patientId={userId} />
-        </div>
+        {/* Removed AddMedicationForm from here */}
 
         <div className="grid gap-4">
           {meds?.map((med) => {

@@ -42,6 +42,7 @@ export default async function CaregiverDashboard() {
           </div>
         </header>
 
+        {/* Section to link a new patient */}
         <section className="mb-10 bg-gradient-to-r from-blue-600 to-indigo-600 p-8 rounded-3xl shadow-xl shadow-blue-100 text-white">
           <div className="flex items-center gap-3 mb-6">
             <UserPlus className="w-6 h-6" />
@@ -85,12 +86,17 @@ export default async function CaregiverDashboard() {
                 </span>
               </div>
               
+              {/* NEW: Add Medication Form per Patient */}
+              <div className="p-6 bg-blue-50/50 border-b border-slate-100">
+                 <AddMedicationForm patientId={link.patient_id} />
+              </div>
+
               <div className="p-2">
                 {link.profiles.medications?.map((med: any) => {
                   const takenTime = med.last_taken_at 
-                     ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
-                         hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' 
-                       }) : null;
+                    ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
+                        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' 
+                      }) : null;
 
                   return (
                     <div key={med.id} className="flex justify-between items-center p-5 hover:bg-slate-50 rounded-2xl transition-colors">
