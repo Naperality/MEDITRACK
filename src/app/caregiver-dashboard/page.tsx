@@ -95,7 +95,7 @@ export default async function CaregiverDashboard() {
                 {link.profiles.medications?.map((med: any) => {
                   const takenTime = med.last_taken_at 
                     ? new Date(med.last_taken_at).toLocaleTimeString('en-PH', { 
-                        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' 
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' 
                       }) : null;
 
                   return (

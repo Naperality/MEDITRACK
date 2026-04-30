@@ -1,30 +1,35 @@
 'use server'
 
 import { supabase } from "@/lib/supabase";
-
 import { revalidatePath } from "next/cache";
 
 export async function addMedication(formData: FormData, patientId: string) {
   const name = formData.get("name") as string;
   const dosage = formData.get("dosage") as string;
   const med_type = formData.get("med_type") as string;
+  const frequency = formData.get("frequency") as string;
   const scheduled_time = formData.get("scheduled_time") as string;
+  const start_date = formData.get("start_date") as string;
+  const end_date = formData.get("end_date") as string;
+  const instructions = formData.get("instructions") as string;
 
   const { error } = await supabase
     .from('medications')
     .insert({
-      patient_id: patientId, // Correctly uses the target patient's ID
+      patient_id: patientId,
       name,
       dosage,
       med_type,
+      frequency,
       scheduled_time,
+      start_date,
+      end_date,
+      instructions,
       is_taken: false
     });
 
   if (!error) {
-    // Revalidate paths to refresh the UI immediately
     revalidatePath('/caregiver-dashboard');
-
     return { success: true };
   }
   
@@ -33,11 +38,6 @@ export async function addMedication(formData: FormData, patientId: string) {
 }
 
 export async function toggleMedication(medId: number, currentState: boolean) {
-
-
-
-
-
   const timeTaken = !currentState ? new Date().toISOString() : null;
 
   const { error } = await supabase
@@ -50,6 +50,6 @@ export async function toggleMedication(medId: number, currentState: boolean) {
 
   if (!error) {
     revalidatePath('/caregiver-dashboard');
-
+    revalidatePath('/patient-dashboard');
   }
 }
