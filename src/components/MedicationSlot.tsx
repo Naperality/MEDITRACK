@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Lock } from "lucide-react"; // Added Lock icon
 import { recordMedicationAction } from "@/app/actions/medication";
 
 export default function MedicationSlot({ med, time, isTaken, userId }: any) {
-  // Initialize state based on whether the DB says it was already taken
-  const [status, setStatus] = useState<'PENDING' | 'MISSED' | 'TAKEN'>(isTaken ? 'TAKEN' : 'PENDING');
+  const [status, setStatus] = useState<'PENDING' | 'MISSED' | 'TAKEN' | 'LOCKED'>(isTaken ? 'TAKEN' : 'LOCKED');
   const [displayDate, setDisplayDate] = useState<string>("");
 
   useEffect(() => {
@@ -18,37 +17,55 @@ export default function MedicationSlot({ med, time, isTaken, userId }: any) {
       const now = new Date();
       const [hours, minutes] = time.split(':').map(Number);
       
-      // Create a reference for the scheduled time TODAY
       const scheduledToday = new Date();
       scheduledToday.setHours(hours, minutes, 0, 0);
 
-      // Set the date string for clarity (e.g., "May 1")
+      // --- THE NEW LOGIC ---
+      const oneHourBefore = new Date(scheduledToday.getTime() - 60 * 60 * 1000);
+      
       setDisplayDate(now.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }));
 
-      // If the current time is strictly after the scheduled time, mark as MISSED
       if (now > scheduledToday) {
         setStatus('MISSED');
+      } else if (now >= oneHourBefore && now <= scheduledToday) {
+        // It's within the 1-hour window
+        setStatus('PENDING'); 
       } else {
-        setStatus('PENDING');
+        // It's too early
+        setStatus('LOCKED');
       }
     };
 
     checkStatus();
-    // Check every 30 seconds to update from PENDING to MISSED in real-time
     const interval = setInterval(checkStatus, 30000); 
-    
     return () => clearInterval(interval);
   }, [time, isTaken]);
 
   const handleAction = async () => {
-    // Optimistic Update: Change color immediately so user knows it worked
+    // Prevent clicks if locked or missed (unless you want them to take missed doses)
+    if (status === 'LOCKED' || status === 'TAKEN') return;
+
     setStatus('TAKEN');
     try {
       await recordMedicationAction(med.id, userId, med.name, time);
     } catch (error) {
-      // If the database fails, revert the UI so they can try again
       console.error("Failed to record medication:", error);
+      // Re-run status check to revert to correct state
       setStatus(isTaken ? 'TAKEN' : 'PENDING');
+    }
+  };
+
+  // Helper to determine styling
+  const getStyles = () => {
+    switch (status) {
+      case 'TAKEN':
+        return 'bg-green-100 border-green-200 text-green-700 opacity-90 cursor-not-allowed';
+      case 'MISSED':
+        return 'bg-red-50 border-red-200 text-red-600 animate-pulse hover:bg-red-100';
+      case 'LOCKED':
+        return 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed grayscale';
+      default: // PENDING (Active window)
+        return 'bg-white border-blue-500 text-blue-700 shadow-md ring-2 ring-blue-100 hover:scale-105';
     }
   };
 
@@ -56,24 +73,24 @@ export default function MedicationSlot({ med, time, isTaken, userId }: any) {
     <form action={handleAction}>
       <button
         type="submit"
-        disabled={status === 'TAKEN'}
-        className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${
-          status === 'TAKEN' 
-            ? 'bg-green-100 border-green-200 text-green-700 opacity-90 cursor-not-allowed' 
-            : status === 'MISSED' 
-            ? 'bg-red-50 border-red-200 text-red-600 animate-pulse hover:bg-red-100' 
-            : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500 hover:shadow-md'
-        }`}
+        disabled={status === 'TAKEN' || status === 'LOCKED' || status === 'MISSED'}
+        className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${getStyles()}`}
       >
         {status === 'TAKEN' ? (
           <CheckCircle2 className="w-4 h-4" />
         ) : status === 'MISSED' ? (
           <AlertCircle className="w-4 h-4" />
+        ) : status === 'LOCKED' ? (
+          <Lock className="w-4 h-4" />
         ) : (
           <Clock className="w-4 h-4" />
         )}
         
         <span className="tabular-nums">{time}</span>
+
+        {status === 'LOCKED' && (
+           <span className="text-[9px] uppercase ml-1 opacity-60">Locked</span>
+        )}
 
         {status === 'MISSED' && (
           <span className="ml-1 text-[9px] uppercase font-black tracking-tighter flex flex-col items-start leading-none">
