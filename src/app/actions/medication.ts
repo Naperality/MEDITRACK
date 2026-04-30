@@ -41,19 +41,16 @@ export async function addMedication(formData: FormData, patientId: string) {
 }
 
 /**
- * 2. RECORD MEDICATION ACTION (Used by Patient or Caregiver)
- * Updated to match the 'med_id' column in your medication_logs table.
+ * 2. RECORD MEDICATION ACTION
+ * Updated to require the specific scheduledTime slot.
  */
-export async function recordMedicationAction(medId: number, patientId: string, medName: string) {
+export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
   const now = new Date().toISOString();
 
-  // Step A: Update the main medication status
+  // Step A: Update the main medication "last taken" time
   const { error: updateError } = await supabase
     .from('medications')
-    .update({ 
-      is_taken: true, 
-      last_taken_at: now 
-    })
+    .update({ last_taken_at: now })
     .eq('id', medId);
 
   if (updateError) {
@@ -61,22 +58,23 @@ export async function recordMedicationAction(medId: number, patientId: string, m
     return;
   }
 
-  // Step B: Insert log entry using your schema's 'med_id' column
+  // Step B: Insert log entry with the specific slot
   const { error: logError } = await supabase
     .from('medication_logs')
     .insert({
-      med_id: medId, // Matched to image_e44f35.png
+      med_id: medId,
       patient_id: patientId,
       med_name: medName,
       status: 'TAKEN',
-      logged_at: now
+      logged_at: now,
+      scheduled_slot: scheduledTime 
     });
 
   if (logError) {
     console.error("Logging error:", logError.message);
   }
 
-  // Refreshing ensures the Activity Logs sidebar updates immediately
+  // Refresh both dashboards to reflect the new log
   revalidatePath('/caregiver-dashboard');
   revalidatePath('/patient-dashboard');
 }
