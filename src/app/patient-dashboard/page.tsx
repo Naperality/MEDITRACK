@@ -34,21 +34,16 @@ export default async function PatientDashboard() {
     .order('logged_at', { ascending: false })
     .limit(50);
 
-  // --- TIMEZONE SYNC: Ensures Server and Client agree on "Today" ---
-  // We use Asia/Manila to ensure consistency for users in the Philippines
-  const phTimeNow = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
-  const todayStr = new Date(phTimeNow).toDateString();
+  const todayStr = new Date().toDateString();
   
-  const todaysLogs = allLogs?.filter(log => {
-    const logPhTime = new Date(log.logged_at).toLocaleString("en-US", { timeZone: "Asia/Manila" });
-    return new Date(logPhTime).toDateString() === todayStr;
-  }) || [];
+  const todaysLogs = allLogs?.filter(log => 
+    new Date(log.logged_at).toDateString() === todayStr
+  ) || [];
 
   const recentLogs = allLogs?.slice(0, 8) || [];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 lg:p-12">
-      {/* Real-time Reminder Component */}
       <MedicationReminder meds={meds || []} todaysLogs={todaysLogs} />
 
       <div className="max-w-6xl mx-auto">
@@ -74,6 +69,7 @@ export default async function PatientDashboard() {
                   </div>
                   <div>
                     <h3 className="font-black text-3xl text-slate-800">{med.name}</h3>
+                    {/* SHOW ALL INFO: Dosage and Type */}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
                         {med.dosage}
@@ -85,7 +81,7 @@ export default async function PatientDashboard() {
                   </div>
                 </div>
 
-                {/* Instructions Box */}
+                {/* SHOW ALL INFO: Instructions Box */}
                 {med.instructions && (
                   <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3 items-center">
                     <Info className="w-5 h-5 text-amber-500 shrink-0" />
@@ -113,7 +109,6 @@ export default async function PatientDashboard() {
             ))}
           </div>
 
-          {/* Sidebar History */}
           <aside className="space-y-8">
             <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
               <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 mb-8">
@@ -121,9 +116,8 @@ export default async function PatientDashboard() {
               </h2>
               <div className="space-y-6">
                 {recentLogs.map((log) => {
-                  const logDatePHT = new Date(new Date(log.logged_at).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-                  const isToday = logDatePHT.toDateString() === todayStr;
-                  
+                  const dateObj = new Date(log.logged_at);
+                  const isToday = dateObj.toDateString() === todayStr;
                   return (
                     <div key={log.id} className="flex gap-4 group">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
@@ -136,7 +130,7 @@ export default async function PatientDashboard() {
                           {log.med_name}
                         </p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">
-                          {isToday ? "Today" : logDatePHT.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} at {logDatePHT.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                          {isToday ? "Today" : dateObj.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })} at {dateObj.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                         <p className={`text-[9px] font-black mt-0.5 ${log.status === 'TAKEN' ? 'text-blue-500' : 'text-red-500'}`}>
                           {log.status === 'TAKEN' ? `COMPLETED SLOT: ${log.scheduled_slot}` : 'MISSED SCHEDULE'}

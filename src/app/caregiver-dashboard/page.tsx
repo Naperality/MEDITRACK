@@ -9,9 +9,6 @@ import {
   History, Pill 
 } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 export default async function CaregiverDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
@@ -35,6 +32,7 @@ export default async function CaregiverDashboard() {
   if (links) {
     await Promise.all(
       links.map(link => {
+        // Handle Supabase returning joined records as an array
         const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
         return profile?.medications 
           ? syncMissedDoses(profile.medications, link.patient_id) 
@@ -43,16 +41,12 @@ export default async function CaregiverDashboard() {
     );
   }
 
-  // 3. FETCH LOGS: Separate fetch to catch the newly created 'MISSED' logs
+  // 3. FETCH LOGS: Separate fetch to catch the newly created 'MISSED' logs from the sync above
   const { data: allLogs } = await supabase
     .from('medication_logs')
     .select('*')
     .in('patient_id', links?.map(l => l.patient_id) || [])
     .order('logged_at', { ascending: false });
-
-  // --- TIMEZONE SYNC: Define "Today" for the Philippines ---
-  const phTimeNow = new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" });
-  const todayStr = new Date(phTimeNow).toDateString();
 
   if (error) {
     console.error("Supabase Fetch Error:", error.message);
@@ -104,6 +98,7 @@ export default async function CaregiverDashboard() {
           </h2>
           
           {links?.map((link: any) => {
+            // Normalize profile and filter logs for this specific patient
             const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
             const patientLogs = allLogs?.filter(log => log.patient_id === link.patient_id) || [];
 
@@ -139,7 +134,9 @@ export default async function CaregiverDashboard() {
                     </h4>
                     
                     {profile?.medications?.map((med: any) => (
-                      <div key={med.id} className="p-6 rounded-[2rem] border bg-white border-slate-100 shadow-sm transition-all hover:border-blue-100">
+                      <div key={med.id} className={`p-6 rounded-[2rem] border transition-all ${
+                        med.is_taken ? 'bg-green-50/30 border-green-100' : 'bg-white border-slate-100 shadow-sm'
+                      }`}>
                         <div className="flex flex-col md:flex-row justify-between gap-4">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
@@ -157,6 +154,18 @@ export default async function CaregiverDashboard() {
                               ))}
                             </div>
                           </div>
+
+                          <div className="flex items-center gap-2">
+                            {med.is_taken ? (
+                              <span className="flex items-center gap-1.5 bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-black uppercase">
+                                <CheckCircle2 className="w-4 h-4" /> Taken
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-xs font-black uppercase border border-amber-100">
+                                <Clock className="w-4 h-4" /> Pending
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -171,29 +180,25 @@ export default async function CaregiverDashboard() {
                   </div>
 
                   <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
-                    {patientLogs.map((log: any) => {
-                      // Formatting log dates correctly for Cebu
-                      const logDatePHT = new Date(new Date(log.logged_at).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-                      
-                      return (
-                        <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${log.status === 'MISSED' ? 'bg-red-500' : 'bg-green-500'}`} />
-                          <div className="flex justify-between items-start">
-                            <p className="text-xs font-black text-slate-800">{log.med_name}</p>
-                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
-                              log.status === 'MISSED' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                            }`}>
-                              {log.status}
-                            </span>
-                          </div>
-                          <p className="text-[10px] font-bold text-slate-400 mt-1">
-                            {logDatePHT.toLocaleString('en-PH', {
-                              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                            })}
-                          </p>
+                    {patientLogs.map((log: any) => (
+                      <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        {/* Red bar for Missed, Green bar for Taken */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${log.status === 'MISSED' ? 'bg-red-500' : 'bg-green-500'}`} />
+                        <div className="flex justify-between items-start">
+                          <p className="text-xs font-black text-slate-800">{log.med_name}</p>
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${
+                            log.status === 'MISSED' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                          }`}>
+                            {log.status}
+                          </span>
                         </div>
-                      );
-                    })}
+                        <p className="text-[10px] font-bold text-slate-400 mt-1">
+                          {new Date(log.logged_at).toLocaleString('en-PH', {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    ))}
                     
                     {patientLogs.length === 0 && (
                       <p className="text-[10px] font-bold text-slate-300 text-center py-10 uppercase tracking-widest">No logs yet</p>
