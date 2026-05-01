@@ -1,9 +1,10 @@
+// app/caregiver/page.tsx
 import { auth } from "@clerk/nextjs/server";
 import { supabase } from "@/lib/supabase";
 import { UserButton } from "@clerk/nextjs";
 import { linkPatient } from "@/app/actions/caregiver";
-import { syncMissedDoses } from "@/app/actions/medication";
 import AddMedicationForm from "@/components/AddMedicationForm";
+import SyncTrigger from "@/components/SyncTrigger"; // Import the background trigger
 import { 
   UserPlus, Activity, CheckCircle2, Clock, 
   History, Pill 
@@ -14,6 +15,7 @@ export default async function CaregiverDashboard() {
   if (!userId) return null;
 
   // 1. FETCH: Retrieve links and nested profile/medication data
+  // We strictly READ here. No database updates.
   const { data: links, error } = await supabase
     .from('caregiver_patient')
     .select(`
@@ -28,34 +30,26 @@ export default async function CaregiverDashboard() {
     `)
     .eq('caregiver_id', userId);
 
-  // 2. TRIGGER SYNC: Update database for missed doses before displaying logs
-  if (links) {
-    await Promise.all(
-      links.map(link => {
-        // Handle Supabase returning joined records as an array
-        const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
-        return profile?.medications 
-          ? syncMissedDoses(profile.medications, link.patient_id) 
-          : Promise.resolve();
-      })
-    );
-  }
+  const patientIds = links?.map(l => l.patient_id) || [];
 
-  // 3. FETCH LOGS: Separate fetch to catch the newly created 'MISSED' logs from the sync above
+  // 2. FETCH LOGS: Retrieve history for all linked patients
   const { data: allLogs } = await supabase
     .from('medication_logs')
     .select('*')
-    .in('patient_id', links?.map(l => l.patient_id) || [])
+    .in('patient_id', patientIds)
     .order('logged_at', { ascending: false });
 
-  if (error) {
-    console.error("Supabase Fetch Error:", error.message);
-  }
+  if (error) console.error("Supabase Fetch Error:", error.message);
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      {/* 
+        This component triggers the missed dose sync for ALL 
+        linked patients in the background after the page loads.
+      */}
+      <SyncTrigger isCaregiver />
+
       <div className="max-w-6xl mx-auto">
-        
         <header className="flex justify-between items-center mb-10">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Caregiver Portal</h1>
@@ -98,7 +92,6 @@ export default async function CaregiverDashboard() {
           </h2>
           
           {links?.map((link: any) => {
-            // Normalize profile and filter logs for this specific patient
             const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
             const patientLogs = allLogs?.filter(log => log.patient_id === link.patient_id) || [];
 
@@ -182,7 +175,6 @@ export default async function CaregiverDashboard() {
                   <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
                     {patientLogs.map((log: any) => (
                       <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                        {/* Red bar for Missed, Green bar for Taken */}
                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${log.status === 'MISSED' ? 'bg-red-500' : 'bg-green-500'}`} />
                         <div className="flex justify-between items-start">
                           <p className="text-xs font-black text-slate-800">{log.med_name}</p>
@@ -205,7 +197,6 @@ export default async function CaregiverDashboard() {
                     )}
                   </div>
                 </div>
-
               </div>
             );
           })}

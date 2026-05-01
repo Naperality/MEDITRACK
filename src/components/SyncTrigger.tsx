@@ -1,12 +1,11 @@
 'use client';
-
 import { useEffect } from 'react';
 
-export default function SyncTrigger() {
+export default function SyncTrigger({ isCaregiver = false }: { isCaregiver?: boolean }) {
   useEffect(() => {
-    // This calls an API route we will create in step 2
-    fetch('/api/sync', { method: 'POST' });
-  }, []);
+    const url = isCaregiver ? '/api/sync?role=caregiver' : '/api/sync';
+    fetch(url, { method: 'POST' }).catch(console.error);
+  }, [isCaregiver]);
 
-  return null; // This component doesn't render anything visible
+  return null;
 }
