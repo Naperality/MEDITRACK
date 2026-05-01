@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
-import { syncMissedDoses } from "@/app/actions/medication"; // Import the sync action
+import { syncMissedDoses } from "@/app/actions/medication";
 import MedicationReminder from "@/components/MedicationReminder";
-import MedicationSlot from "@/components/MedicationSlot"; // Import your new client component
+import MedicationSlot from "@/components/MedicationSlot";
 import { 
   Clock, Pill, Calendar, FileText, 
   History, Activity, CheckCircle2, AlertCircle
@@ -12,6 +12,7 @@ import {
 export default async function PatientDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
+
   // 1. Fetch Medications
   const { data: meds } = await supabase
     .from('medications')
@@ -19,22 +20,22 @@ export default async function PatientDashboard() {
     .eq('patient_id', userId)
     .order('created_at', { ascending: false });
 
-  // 2. Trigger Proactive Sync
-  // This automatically marks missed doses in the DB if they aren't there yet
+  // 2. Trigger Proactive Sync (Await this so DB is updated before next steps)
   if (meds && meds.length > 0) {
     await syncMissedDoses(meds, userId);
   }
 
-  // 3. Fetch Today's Logs (re-fetch after sync to get updated "MISSED" statuses)
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
+  // 3. Fetch Today's Logs (After sync, to get updated statuses)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  
   const { data: todaysLogs } = await supabase
     .from('medication_logs')
     .select('*')
     .eq('patient_id', userId)
-    .gte('logged_at', yesterday.toISOString());
+    .gte('logged_at', todayStart.toISOString());
 
-  // 4. Fetch Recent Logs for History Sidebar
+  // 4. Fetch Recent Logs for History Sidebar (Now includes synced missed doses)
   const { data: recentLogs } = await supabase
     .from('medication_logs')
     .select('*')
@@ -69,8 +70,8 @@ export default async function PatientDashboard() {
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-blue-600" />
-                    Today's Regimen
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  Today's Regimen
                 </h2>
                 <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
                     {meds?.length || 0} Prescriptions
@@ -96,25 +97,27 @@ export default async function PatientDashboard() {
                     </div>
                   </div>
 
-                  {/* PROACTIVE SLOTS: Uses the client component for real-time logic */}
                   <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest flex items-center gap-2">
                         <Clock className="w-3 h-3" /> Daily Schedule:
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      {med.scheduled_times.map((time: string) => (
-                        <MedicationSlot 
-                          key={time}
-                          med={med}
-                          time={time}
-                          userId={userId}
-                          isTaken={todaysLogs?.some(log => 
-                            log.med_id === med.id && 
-                            log.scheduled_slot === time && 
-                            log.status === 'TAKEN'
-                          )}
-                        />
-                      ))}
+                      {med.scheduled_times.map((time: string) => {
+                        // Find if there's an existing log for this specific slot today
+                        const logForSlot = todaysLogs?.find(log => 
+                          log.med_id === med.id && log.scheduled_slot === time
+                        );
+
+                        return (
+                          <MedicationSlot 
+                            key={time}
+                            med={med}
+                            time={time}
+                            userId={userId}
+                            dbStatus={logForSlot?.status} // Pass 'TAKEN' or 'MISSED' from DB
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
