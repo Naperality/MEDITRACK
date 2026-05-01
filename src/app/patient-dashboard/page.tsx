@@ -9,6 +9,10 @@ import {
   History, Activity, CheckCircle2, AlertCircle
 } from "lucide-react";
 
+// FORCE FRESH DATA: This prevents the '304 Not Modified' caching in Vercel
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function PatientDashboard() {
   const { userId } = await auth();
   if (!userId) return null;
