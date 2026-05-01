@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -8,42 +7,30 @@ export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], 
     const checkSchedule = () => {
       const now = new Date();
       const currentTime = now.toLocaleTimeString('en-GB', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
+        hour: '2-digit', minute: '2-digit', hour12: false 
       });
 
       meds.forEach(med => {
-        // 1. Check if the current time matches a scheduled time
         const isScheduledNow = med.scheduled_times?.includes(currentTime);
         
-        // 2. Check if this specific slot has already been logged today
-        const alreadyTaken = todaysLogs.some(log => 
+        // Only notify if not already logged today (Taken or Missed)
+        const alreadyLogged = todaysLogs.some(log => 
           log.med_id === med.id && log.scheduled_slot === currentTime
         );
 
-        if (isScheduledNow && !alreadyTaken) {
+        if (isScheduledNow && !alreadyLogged) {
           toast(`Time for ${med.name}!`, {
             icon: '💊',
-            duration: 8000,
-            style: {
-              borderRadius: '24px',
-              background: '#0F172A',
-              color: '#FFFFFF',
-              fontWeight: '900',
-              padding: '20px'
-            }
+            duration: 5000,
+            style: { borderRadius: '20px', background: '#0F172A', color: '#fff' }
           });
 
-          const audio = new Audio('/alert.mp3');
-          audio.play().catch(() => console.log("Audio waiting for user interaction"));
+          new Audio('/alert.mp3').play().catch(() => {});
         }
       });
     };
 
     const intervalId = setInterval(checkSchedule, 60000);
-    checkSchedule();
-
     return () => clearInterval(intervalId);
   }, [meds, todaysLogs]);
 
