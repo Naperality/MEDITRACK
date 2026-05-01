@@ -186,7 +186,7 @@ export default async function CaregiverDashboard() {
                         </div>
                         <p className="text-[10px] font-bold text-slate-400 mt-1">
                           {new Date(log.logged_at).toLocaleString('en-PH', {
-                             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                             timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
                           })}
                         </p>
                       </div>
