@@ -2,7 +2,7 @@
   "name": "MediTrack Patient Portal",
   "short_name": "MediTrack",
   "description": "Your personal medication tracker.",
-  "start_url": "/patient-dashboard",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#F8FAFC",
   "theme_color": "#2563EB",
