@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 /**
  * HELPER: Get current PH Time
+ * Ensures the logic uses Manila time regardless of where the server is hosted.
  */
 const getPHDate = () => {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
@@ -50,12 +51,12 @@ export async function addMedication(formData: FormData, patientId: string) {
  * 2. RECORD MEDICATION ACTION
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
-  // We use standard ISO for the DB, but the UI handles the conversion
-  const now = new Date().toISOString();
+  // Store the exact moment of action in UTC ISO format for the database
+  const nowUTC = new Date().toISOString();
 
   await supabase
     .from('medications')
-    .update({ last_taken_at: now })
+    .update({ last_taken_at: nowUTC })
     .eq('id', medId);
 
   const { error: logError } = await supabase
@@ -65,7 +66,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
       patient_id: patientId,
       med_name: medName,
       status: 'TAKEN',
-      logged_at: now,
+      logged_at: nowUTC,
       scheduled_slot: scheduledTime
     });
 
@@ -77,19 +78,21 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 
 /**
  * 3. SYNC MISSED DOSES (Philippine Time Adjusted)
+ * Logic: Calculates slots in PH time, converts to UTC for DB storage.
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
   
-  // Look back 48 hours relative to PH time
-  const lookbackPeriod = new Date(nowPH);
-  lookbackPeriod.setDate(lookbackPeriod.getDate() - 2);
+  // Look back 48 hours relative to current PH time
+  const lookbackPH = new Date(nowPH);
+  lookbackPH.setDate(lookbackPH.getDate() - 2);
 
+  // Fetch existing logs using UTC ISO string of our PH lookback
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
     .eq('patient_id', patientId)
-    .gte('logged_at', lookbackPeriod.toISOString());
+    .gte('logged_at', lookbackPH.toISOString());
 
   const logsToInsert = [];
 
@@ -97,28 +100,33 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
       
-      const todaySlot = new Date(nowPH);
-      todaySlot.setHours(hours, minutes, 0, 0);
+      // Define the target slot in PH time for Today
+      const todaySlotPH = new Date(nowPH);
+      todaySlotPH.setHours(hours, minutes, 0, 0);
 
-      const yesterdaySlot = new Date(todaySlot);
-      yesterdaySlot.setDate(yesterdaySlot.getDate() - 1);
+      // Define the target slot in PH time for Yesterday
+      const yesterdaySlotPH = new Date(todaySlotPH);
+      yesterdaySlotPH.setDate(yesterdaySlotPH.getDate() - 1);
 
-      const timesToCheck = [todaySlot, yesterdaySlot];
+      const slotsToCheck = [todaySlotPH, yesterdaySlotPH];
 
-      for (const checkTime of timesToCheck) {
-        // Compare "Now" in PH to the slot time in PH
-        const isPast = nowPH > checkTime;
+      for (const slotTimePH of slotsToCheck) {
+        // Check 1: Has this time passed in the Philippines?
+        const isPast = nowPH > slotTimePH;
         
-        // Ensure slot is within prescription dates
-        const checkTimeISO = checkTime.toISOString();
-        const isWithinRange = checkTimeISO >= med.start_date && (med.end_date ? checkTimeISO <= med.end_date : true);
+        // Check 2: Is the slot within the medication's active dates?
+        const slotISO = slotTimePH.toISOString();
+        const isWithinRange = slotISO >= med.start_date && (med.end_date ? slotISO <= med.end_date : true);
         
         if (isPast && isWithinRange) {
+          // Check 3: Duplicate Check
+          // Compare by converting DB UTC log time back to PH for an exact match
           const alreadyLogged = existingLogs?.some(l => {
             const logDatePH = new Date(new Date(l.logged_at).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+            
             return l.med_id === med.id &&
                    l.scheduled_slot === slot &&
-                   logDatePH.toDateString() === checkTime.toDateString();
+                   logDatePH.getTime() === slotTimePH.getTime();
           });
 
           if (!alreadyLogged) {
@@ -127,7 +135,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
               patient_id: patientId,
               med_name: med.name,
               status: 'MISSED',
-              logged_at: checkTime.toISOString(),
+              logged_at: slotISO, // Stores as UTC correctly in timestamptz column
               scheduled_slot: slot
             });
           }
