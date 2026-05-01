@@ -77,7 +77,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 }
 
 /**
- * 3. SYNC MISSED DOSES (Fixed Duplication Logic)
+ * 3. SYNC MISSED DOSES (Corrected Timezone Offset)
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
@@ -106,16 +106,16 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
 
       for (const slotTimePH of slotsToCheck) {
         const isPast = nowPH > slotTimePH;
-        const slotISO = slotTimePH.toISOString();
-        const isWithinRange = slotISO >= med.start_date && (med.end_date ? slotISO <= med.end_date : true);
+        
+        // Use a comparison string that respects the medication's date range
+        const slotComparisonISO = slotTimePH.toISOString();
+        const isWithinRange = slotComparisonISO >= med.start_date && 
+                             (med.end_date ? slotComparisonISO <= med.end_date : true);
         
         if (isPast && isWithinRange) {
-          // --- FIXED DUPLICATE CHECK ---
           const alreadyLogged = existingLogs?.some(l => {
             const logDate = new Date(l.logged_at);
-            
-            // Format both dates to YYYY-MM-DD in Manila time for comparison
-            const dbDateString = logDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // en-CA gives YYYY-MM-DD
+            const dbDateString = logDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
             const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
             return (
@@ -126,12 +126,22 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
           });
 
           if (!alreadyLogged) {
+            // --- FIX: Create a string with the explicit +08:00 offset ---
+            const year = slotTimePH.getFullYear();
+            const month = String(slotTimePH.getMonth() + 1).padStart(2, '0');
+            const day = String(slotTimePH.getDate()).padStart(2, '0');
+            const hh = String(slotTimePH.getHours()).padStart(2, '0');
+            const mm = String(slotTimePH.getMinutes()).padStart(2, '0');
+            
+            // This format (YYYY-MM-DDTHH:mm:ss+08:00) forces the DB to see Manila time
+            const manilaISO = `${year}-${month}-${day}T${hh}:${mm}:00+08:00`;
+
             logsToInsert.push({
               med_id: med.id,
               patient_id: patientId,
               med_name: med.name,
               status: 'MISSED',
-              logged_at: slotISO,
+              logged_at: manilaISO, 
               scheduled_slot: slot
             });
           }
@@ -150,7 +160,6 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     }
   }
 }
-
 /**
  * 4. DELETE MEDICATION
  */
