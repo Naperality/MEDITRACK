@@ -106,7 +106,10 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
 
   for (const med of meds) {
     // Convert start_date (YYYY-MM-DD) to a Manila-aligned Date object for comparison
-    const startDate = new Date(med.start_date + "T00:00:00+08:00");
+    // Split the YYYY-MM-DD string to avoid UTC auto-conversion issues
+    const [sYear, sMonth, sDay] = med.start_date.split('-').map(Number);
+    // Create the date object specifically for Manila 00:00:00
+    const startDate = new Date(new Date(sYear, sMonth - 1, sDay, 0, 0, 0).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
     
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
