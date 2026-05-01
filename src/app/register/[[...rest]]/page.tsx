@@ -1,8 +1,14 @@
+"use client"; // Required for state management
+
 import { SignUp } from "@clerk/nextjs";
-import { CheckCircle2, Users, HeartPulse } from "lucide-react";
+import { Users, HeartPulse, UserCircle } from "lucide-react";
 import { clerkTheme } from "@/lib/clerk-theme";
+import { useState } from "react";
 
 export default function RegisterPage() {
+  // State to track the selected role
+  const [role, setRole] = useState<"PATIENT" | "CAREGIVER">("PATIENT");
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* Left Side: Information */}
@@ -28,14 +34,38 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Side: Clerk Component */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50">
-        <div className="w-full max-w-md py-12">
+      {/* Right Side: Role Selection + Clerk */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 bg-slate-50">
+        <div className="w-full max-w-md py-6">
+          
+          {/* Role Selection UI */}
+          <div className="mb-8 p-1 bg-slate-200 rounded-lg flex gap-1">
+            <button
+              onClick={() => setRole("PATIENT")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md transition-all ${
+                role === "PATIENT" ? "bg-white shadow-sm text-blue-600" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <UserCircle size={18} />
+              <span className="font-semibold text-sm">Patient</span>
+            </button>
+            <button
+              onClick={() => setRole("CAREGIVER")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md transition-all ${
+                role === "CAREGIVER" ? "bg-white shadow-sm text-blue-600" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Users size={18} />
+              <span className="font-semibold text-sm">Caregiver</span>
+            </button>
+          </div>
+
           <SignUp 
             routing="path" 
             path="/register" 
+            // The role state is now passed dynamically here
             unsafeMetadata={{
-              requested_role: "PATIENT" 
+              requested_role: role 
             }}
             appearance={clerkTheme}
           />
