@@ -131,7 +131,7 @@ export default async function PatientDashboard() {
                           {log.med_name}
                         </p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">
-                          {isToday ? "Today" : dateObj.toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' })} at {dateObj.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}
+                          {isToday ? "Today" : dateObj.toLocaleDateString('en-PH', {  month: 'short', day: 'numeric' })} at {dateObj.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })}
                         </p>
                         <p className={`text-[9px] font-black mt-0.5 ${log.status === 'TAKEN' ? 'text-blue-500' : 'text-red-500'}`}>
                           {log.status === 'TAKEN' ? `COMPLETED SLOT: ${log.scheduled_slot}` : 'MISSED SCHEDULE'}
