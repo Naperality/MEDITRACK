@@ -5,6 +5,7 @@ import MedicationReminder from "@/components/MedicationReminder";
 import MedicationSlot from "@/components/MedicationSlot";
 import SyncTrigger from "@/components/SyncTrigger";
 import { Pill, History, Activity, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { syncMissedDoses } from "@/app/actions/medication";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,6 +20,10 @@ export default async function PatientDashboard() {
     .eq('patient_id', userId)
     .order('created_at', { ascending: false });
 
+    if (meds && meds.length > 0) {
+    await syncMissedDoses(meds, userId);
+  }
+  
   const { data: allLogs } = await supabase
     .from('medication_logs')
     .select('*')
