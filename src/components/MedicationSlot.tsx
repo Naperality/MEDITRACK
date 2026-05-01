@@ -6,36 +6,35 @@ import { recordMedicationAction } from "@/app/actions/medication";
 export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
   const [status, setStatus] = useState<'PENDING' | 'MISSED' | 'TAKEN' | 'LOCKED'>('LOCKED');
 
-  useEffect(() => {
-    const checkStatus = () => {
-      // If DB has a record for today, use that status permanently for the rest of the day
-      if (dbStatus) {
-        setStatus(dbStatus);
-        return;
-      }
+  // MedicationSlot.tsx snippet
+useEffect(() => {
+  const checkStatus = () => {
+    if (dbStatus) {
+      setStatus(dbStatus);
+      return;
+    }
 
-      const now = new Date();
-      const [hours, minutes] = time.split(':').map(Number);
-      
-      const scheduledToday = new Date();
-      scheduledToday.setHours(hours, minutes, 0, 0);
+    const now = new Date();
+    const [hours, minutes] = time.split(':').map(Number);
+    const scheduledToday = new Date();
+    scheduledToday.setHours(hours, minutes, 0, 0);
 
-      const oneHourBefore = new Date(scheduledToday.getTime() - 60 * 60 * 1000);
-      const gracePeriodEnd = new Date(scheduledToday.getTime() + 30 * 60 * 1000);
+    const oneHourBefore = new Date(scheduledToday.getTime() - 60 * 60 * 1000);
+    
+    // MATCH THE SERVER: If it is past the time, it is MISSED immediately
+    if (now > scheduledToday) {
+      setStatus('MISSED');
+    } else if (now >= oneHourBefore && now <= scheduledToday) {
+      setStatus('PENDING'); 
+    } else {
+      setStatus('LOCKED');
+    }
+  };
 
-      if (now > gracePeriodEnd) {
-        setStatus('MISSED');
-      } else if (now >= oneHourBefore && now <= gracePeriodEnd) {
-        setStatus('PENDING'); 
-      } else {
-        setStatus('LOCKED');
-      }
-    };
-
-    checkStatus();
-    const interval = setInterval(checkStatus, 15000); 
-    return () => clearInterval(interval);
-  }, [time, dbStatus]);
+  checkStatus();
+  const interval = setInterval(checkStatus, 15000); 
+  return () => clearInterval(interval);
+}, [time, dbStatus]);
 
   const handleAction = async () => {
     if (status !== 'PENDING') return;
