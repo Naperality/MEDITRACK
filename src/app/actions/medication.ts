@@ -4,6 +4,46 @@ import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 /**
+ * 1. ADD MEDICATION (Used by Caregiver)
+ * Keep this! Your app needs it to create new prescriptions.
+ */
+export async function addMedication(formData: FormData, patientId: string) {
+  const name = formData.get("name") as string;
+  const dosage = formData.get("dosage") as string;
+  const med_type = formData.get("med_type") as string;
+  const daily_count = parseInt(formData.get("daily_count") as string);
+  const start_date = formData.get("start_date") as string;
+  const end_date = formData.get("end_date") as string;
+  const instructions = formData.get("instructions") as string;
+  const scheduled_times = formData.getAll("scheduled_times") as string[];
+
+  const { error } = await supabase
+    .from('medications')
+    .insert({
+      patient_id: patientId,
+      name,
+      dosage,
+      med_type,
+      daily_count,
+      scheduled_times,
+      start_date,
+      end_date,
+      instructions,
+      is_taken: false 
+    });
+
+  if (!error) {
+    revalidatePath('/caregiver-dashboard');
+    revalidatePath('/patient-dashboard');
+    return { success: true };
+  }
+  
+  console.error("Insert error:", error.message);
+  return { error: error.message };
+}
+
+/**
+/**
  * 1. RECORD MEDICATION ACTION
  * Triggered when a patient clicks a 'PENDING' button.
  */
