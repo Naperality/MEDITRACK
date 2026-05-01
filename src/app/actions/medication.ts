@@ -90,37 +90,38 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 }
 
 /**
- * 3. SYNC MISSED DOSES (Corrected Timezone Offset)
+ * 3. SYNC MISSED DOSES (Fixed: Dynamic Date Range)
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
-  const lookbackPH = new Date(nowPH);
-  lookbackPH.setDate(lookbackPH.getDate() - 2);
-
+  
+  // 1. Fetch all logs for this patient. 
+  // We remove the .gte filter to ensure we can check against the full history.
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
-    .eq('patient_id', patientId)
-    .gte('logged_at', lookbackPH.toISOString());
+    .eq('patient_id', patientId);
 
   const logsToInsert = [];
 
   for (const med of meds) {
+    // Convert start_date (YYYY-MM-DD) to a Manila-aligned Date object for comparison
+    const startDate = new Date(med.start_date + "T00:00:00+08:00");
+    
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
       
-      const todaySlotPH = new Date(nowPH);
-      todaySlotPH.setHours(hours, minutes, 0, 0);
+      // Start checking from the medication's start date
+      let checkDate = new Date(startDate);
 
-      const yesterdaySlotPH = new Date(todaySlotPH);
-      yesterdaySlotPH.setDate(yesterdaySlotPH.getDate() - 1);
+      // Loop through every day from start_date until today
+      while (checkDate <= nowPH) {
+        const slotTimePH = new Date(checkDate);
+        slotTimePH.setHours(hours, minutes, 0, 0);
 
-      const slotsToCheck = [todaySlotPH, yesterdaySlotPH];
-
-      for (const slotTimePH of slotsToCheck) {
         const isPast = nowPH > slotTimePH;
         
-        // Use a comparison string that respects the medication's date range
+        // Use your existing ISO comparison logic for the range
         const slotComparisonISO = slotTimePH.toISOString();
         const isWithinRange = slotComparisonISO >= med.start_date && 
                              (med.end_date ? slotComparisonISO <= med.end_date : true);
@@ -139,14 +140,12 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
           });
 
           if (!alreadyLogged) {
-            // --- FIX: Create a string with the explicit +08:00 offset ---
             const year = slotTimePH.getFullYear();
             const month = String(slotTimePH.getMonth() + 1).padStart(2, '0');
             const day = String(slotTimePH.getDate()).padStart(2, '0');
             const hh = String(slotTimePH.getHours()).padStart(2, '0');
             const mm = String(slotTimePH.getMinutes()).padStart(2, '0');
             
-            // This format (YYYY-MM-DDTHH:mm:ss+08:00) forces the DB to see Manila time
             const manilaISO = `${year}-${month}-${day}T${hh}:${mm}:00+08:00`;
 
             logsToInsert.push({
@@ -159,6 +158,8 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
             });
           }
         }
+        // Move to the next day
+        checkDate.setDate(checkDate.getDate() + 1);
       }
     }
   }
