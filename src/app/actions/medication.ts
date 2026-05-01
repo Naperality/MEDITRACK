@@ -48,17 +48,30 @@ export async function addMedication(formData: FormData, patientId: string) {
 }
 
 /**
- * 2. RECORD MEDICATION ACTION
+ * 2. RECORD MEDICATION ACTION (Fixed Timeline)
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
-  // Store the exact moment of action in UTC ISO format for the database
-  const nowUTC = new Date().toISOString();
+  // 1. Get the current time in Manila
+  const nowPH = getPHDate();
+  
+  // 2. Format it to a string that includes the +08:00 offset
+  // This prevents the 8-hour shift in your database and dashboard
+  const year = nowPH.getFullYear();
+  const month = String(nowPH.getMonth() + 1).padStart(2, '0');
+  const day = String(nowPH.getDate()).padStart(2, '0');
+  const hh = String(nowPH.getHours()).padStart(2, '0');
+  const mm = String(nowPH.getMinutes()).padStart(2, '0');
+  const ss = String(nowPH.getSeconds()).padStart(2, '0');
+  
+  const manilaISO = `${year}-${month}-${day}T${hh}:${mm}:${ss}+08:00`;
 
+  // Update the medication record
   await supabase
     .from('medications')
-    .update({ last_taken_at: nowUTC })
+    .update({ last_taken_at: manilaISO })
     .eq('id', medId);
 
+  // Insert the activity log
   const { error: logError } = await supabase
     .from('medication_logs')
     .insert({
@@ -66,7 +79,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
       patient_id: patientId,
       med_name: medName,
       status: 'TAKEN',
-      logged_at: nowUTC,
+      logged_at: manilaISO, // Now correctly shows Manila time
       scheduled_slot: scheduledTime
     });
 
