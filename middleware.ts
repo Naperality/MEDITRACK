@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/login(.*)',
   '/register(.*)',
+  '/manifest.json',
   '/api/webhooks/clerk'
 ]);
 
