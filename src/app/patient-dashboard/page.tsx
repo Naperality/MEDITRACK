@@ -34,7 +34,7 @@ export default async function PatientDashboard() {
     .order('logged_at', { ascending: false })
     .limit(50);
 
-  const todayStr = new Date().toDateString();
+  const todayStr = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })).toDateString();
   
   const todaysLogs = allLogs?.filter(log => 
     new Date(log.logged_at).toDateString() === todayStr
