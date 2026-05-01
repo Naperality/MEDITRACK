@@ -77,17 +77,13 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 }
 
 /**
- * 3. SYNC MISSED DOSES (Philippine Time Adjusted)
- * Logic: Calculates slots in PH time, converts to UTC for DB storage.
+ * 3. SYNC MISSED DOSES (Fixed Duplication Logic)
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
-  
-  // Look back 48 hours relative to current PH time
   const lookbackPH = new Date(nowPH);
   lookbackPH.setDate(lookbackPH.getDate() - 2);
 
-  // Fetch existing logs using UTC ISO string of our PH lookback
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
@@ -100,33 +96,33 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
       
-      // Define the target slot in PH time for Today
       const todaySlotPH = new Date(nowPH);
       todaySlotPH.setHours(hours, minutes, 0, 0);
 
-      // Define the target slot in PH time for Yesterday
       const yesterdaySlotPH = new Date(todaySlotPH);
       yesterdaySlotPH.setDate(yesterdaySlotPH.getDate() - 1);
 
       const slotsToCheck = [todaySlotPH, yesterdaySlotPH];
 
       for (const slotTimePH of slotsToCheck) {
-        // Check 1: Has this time passed in the Philippines?
         const isPast = nowPH > slotTimePH;
-        
-        // Check 2: Is the slot within the medication's active dates?
         const slotISO = slotTimePH.toISOString();
         const isWithinRange = slotISO >= med.start_date && (med.end_date ? slotISO <= med.end_date : true);
         
         if (isPast && isWithinRange) {
-          // Check 3: Duplicate Check
-          // Compare by converting DB UTC log time back to PH for an exact match
+          // --- FIXED DUPLICATE CHECK ---
           const alreadyLogged = existingLogs?.some(l => {
-            const logDatePH = new Date(new Date(l.logged_at).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+            const logDate = new Date(l.logged_at);
             
-            return l.med_id === med.id &&
-                   l.scheduled_slot === slot &&
-                   logDatePH.getTime() === slotTimePH.getTime();
+            // Format both dates to YYYY-MM-DD in Manila time for comparison
+            const dbDateString = logDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // en-CA gives YYYY-MM-DD
+            const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+
+            return (
+              l.med_id === med.id &&
+              l.scheduled_slot === slot &&
+              dbDateString === currentSlotDateString
+            );
           });
 
           if (!alreadyLogged) {
@@ -135,7 +131,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
               patient_id: patientId,
               med_name: med.name,
               status: 'MISSED',
-              logged_at: slotISO, // Stores as UTC correctly in timestamptz column
+              logged_at: slotISO,
               scheduled_slot: slot
             });
           }
