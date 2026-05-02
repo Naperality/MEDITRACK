@@ -133,7 +133,19 @@ export default async function PatientDashboard() {
                   <div>
                     <p className="text-sm font-black text-slate-800">{log.med_name}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase">
-                      {new Date(log.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Manila' })} • {new Date(log.logged_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                      {/* Format the Time */}
+                      {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        timeZone: 'Asia/Manila' 
+                      })} 
+                      • 
+                      {/* Format the Date - Add timeZone here to fix the "May 1" issue */}
+                      {new Date(log.logged_at).toLocaleDateString('en-PH', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        timeZone: 'Asia/Manila' 
+                      })}
                     </p>
                   </div>
                 </div>
