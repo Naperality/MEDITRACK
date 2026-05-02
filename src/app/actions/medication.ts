@@ -95,7 +95,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
         const slotTimePH = new Date(checkDate.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
         slotTimePH.setHours(hours, minutes, 0, 0);
 
-        const gracePeriodMs = 120 * 60 * 1000; 
+        const gracePeriodMs = 30 * 60 * 1000; 
         const isPast = nowPH.getTime() > (slotTimePH.getTime() + gracePeriodMs);
         
         const currentDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });

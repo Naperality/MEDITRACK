@@ -92,7 +92,7 @@ serve(async (req) => {
           const slotTime = new Date(checkDate);
           slotTime.setHours(slotHours, slotMinutes, 0, 0);
 
-          const gracePeriodMs = 120 * 60 * 1000; // 2 hours
+          const gracePeriodMs = 30 * 60 * 1000; // 1 hours
           const isPastGrace = nowPH.getTime() > (slotTime.getTime() + gracePeriodMs);
           
           const currentSlotDateStr = slotTime.toLocaleDateString("en-CA");

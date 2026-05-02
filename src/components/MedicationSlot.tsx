@@ -30,7 +30,7 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
 
       // Define Windows (in milliseconds)
       const oneHour = 60 * 60 * 1000;
-      const twoHours = 120 * 60 * 1000;
+      const twoHours = 30 * 60 * 1000;
 
       // Logic:
       // PENDING: From 1 hour before until 2 hours after
