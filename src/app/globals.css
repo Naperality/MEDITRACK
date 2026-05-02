@@ -1,65 +1,82 @@
 @import "tailwindcss";
 
-/* 1. MediTrack Theme Variables */
+/* 1. MediTrack Medical Theme Configuration */
 @theme {
-  /* This maps your custom variables to Tailwind utility classes */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Custom Medical Colors */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
   
-  /* We add our custom Blue & Slate shades specifically for the design */
-  --color-brand-blue: #2563eb;
-  --color-brand-slate: #0f172a;
-  
-  /* Ensuring our rounded corners (3xl) are explicitly supported */
+  --color-slate-50: #f8fafc;
+  --color-slate-600: #475569;
+  --color-slate-900: #0f172a;
+
+  /* Custom Transitions & Radii */
   --radius-3xl: 1.5rem;
   --radius-2xl: 1rem;
+  
+  --animate-subtle-bounce: subtle-bounce 3s ease-in-out infinite;
+
+  @keyframes subtle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
 }
 
-:root {
-  /* Light Mode - Medical Slate & White */
-  --background: #f8fafc; /* slate-50 */
-  --foreground: #0f172a; /* slate-900 */
-}
-
-/* 2. Global Styles */
+/* 2. Base Styles & Global Resets */
 @layer base {
+  :root {
+    --background: #f0fdfa; /* Light Emerald Tint */
+    --foreground: #0f172a;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-sans), Arial, sans-serif;
+    @apply bg-background text-foreground overflow-x-hidden;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Smooth transitions for our dashboard cards */
-  * {
-    @apply transition-colors duration-200;
+  /* Force smooth scrolling for the landing page */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Standard transitions for all interactive elements */
+  a, button, div {
+    @apply transition-all duration-300;
   }
 }
 
-/* 3. Utility overrides for Clerk and Cards */
+/* 3. Custom Utilities */
 @layer utilities {
   .glass-morphism {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
-/* Custom Scrollbar for the Philippines Capstone Demo */
+/* 4. Medical UI Scrollbar (Matches the Emerald Theme) */
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #10b981; /* emerald-500 */
   border-radius: 10px;
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #e2e8f0;
-  border-radius: 10px;
+
+::-webkit-scrollbar-thumb:hover {
+  background: #059669; /* emerald-600 */
 }
