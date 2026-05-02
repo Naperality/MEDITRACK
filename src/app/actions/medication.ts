@@ -51,11 +51,11 @@ export async function addMedication(formData: FormData, patientId: string) {
  * 2. RECORD MEDICATION ACTION (Fixed Timeline)
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
-  const nowPH = getPHDate();
+  const now = new Date().toISOString();
   // Using Intl to format the string correctly for Supabase timestamptz
   // const manilaISO = nowPH.toLocaleString("sv-SE", { timeZone: "Asia/Manila" }).replace(' ', 'T');
 
-  await supabaseAdmin.from('medications').update({ last_taken_at: nowPH }).eq('id', medId);
+  await supabaseAdmin.from('medications').update({ last_taken_at: now }).eq('id', medId);
 
   const formattedSlot = scheduledTime.length === 5 ? `${scheduledTime}:00` : scheduledTime;
 
@@ -64,7 +64,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
     patient_id: patientId,
     med_name: medName,
     status: 'TAKEN',
-    logged_at: nowPH,
+    logged_at: now,
     scheduled_slot: formattedSlot
   });
 
