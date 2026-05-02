@@ -31,13 +31,22 @@ export default async function PatientDashboard() {
     .order('logged_at', { ascending: false })
     .limit(50);
 
-  const nowPH = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  const todayStr = nowPH.toDateString();
-  
-  const todaysLogs = allLogs?.filter(log => 
-    new Date(log.logged_at).toDateString() === todayStr
-  ) || [];
+  // --- FIXED TIMEZONE LOGIC ---
+  // Get the current date string in Manila format (e.g., "5/2/2026")
+  const currentManilaDate = new Date().toLocaleDateString("en-US", { 
+    timeZone: "Asia/Manila" 
+  });
 
+  // Filter logs by comparing the log's Manila date string to today's Manila date string
+  const todaysLogs = allLogs?.filter(log => {
+    const logDateManila = new Date(log.logged_at).toLocaleDateString("en-US", { 
+      timeZone: "Asia/Manila" 
+    });
+    return logDateManila === currentManilaDate;
+  }) || [];
+
+  // Used for calculating if a medication is currently within its active start/end date range
+  const nowPH = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
   const recentLogs = allLogs?.slice(0, 8) || [];
 
   return (
