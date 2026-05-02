@@ -75,9 +75,20 @@ export default function PatientCard({ profile, patientId, logs }: any) {
                   <div className={`absolute left-0 top-2 bottom-2 w-1 rounded-full ${log.status === 'MISSED' ? 'bg-red-400' : 'bg-green-400'}`} />
                   <p className="text-[11px] font-bold text-slate-800 truncate">{log.med_name}</p>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-[9px] text-slate-400">
-                      {new Date(log.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center gap-2 text-slate-400">
+                        <Clock size={10} className="text-slate-300" />
+                        <p className="text-[10px] font-bold uppercase tracking-tight">
+                          {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                          })} 
+                          <span className="mx-1 opacity-30">•</span>
+                          {new Date(log.logged_at).toLocaleDateString('en-PH', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                          })}
+                        </p>
+                      </div>
                     <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${log.status === 'MISSED' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                       {log.status}
                     </span>
