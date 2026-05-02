@@ -1,52 +1,92 @@
 import { SignIn } from "@clerk/nextjs";
-import { Pill, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Pill, ShieldCheck, ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { clerkTheme } from "@/lib/clerk-theme";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Back to Home Button - Themed with Rose hover */}
+    <div className="flex min-h-screen bg-[#fffcfc]">
+      {/* Back to Home Button - Refined with subtle border */}
       <Link 
         href="/" 
-        className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-rose-600 transition-colors font-medium z-20"
+        className="absolute top-6 left-6 sm:top-10 sm:left-10 flex items-center gap-2 text-slate-400 hover:text-rose-600 transition-all duration-300 font-medium z-20 group"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
+        <div className="p-2 rounded-full group-hover:bg-rose-50 transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+        </div>
+        <span className="text-sm tracking-wide uppercase">Back to Home</span>
       </Link>
 
-      {/* Left Side: Brand Identity - Updated with Rose Gradient */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-rose-600 to-pink-700 items-center justify-center p-12 relative overflow-hidden">
-        {/* Decorative Circles matching the Register page */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-pink-400/20 rounded-full blur-3xl" />
+      {/* Left Side: Professional Branding Side */}
+      <div className="hidden lg:flex w-[45%] bg-slate-900 items-center justify-center p-16 relative overflow-hidden">
+        {/* Animated Mesh Gradient Overlay for "Sleek" look */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-rose-600/30 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-pink-500/20 blur-[100px]" />
+        </div>
         
-        <div className="max-w-md relative z-10">
-          <div className="bg-white p-3 rounded-2xl mb-8 w-fit shadow-xl shadow-rose-900/20">
-            <Pill className="text-rose-600 w-8 h-8" />
-          </div>
-          <h2 className="text-4xl font-black text-white mb-6 leading-tight">
-            Secure Access to Your <br />Health Dashboard.
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 text-rose-100">
-              <div className="bg-white/10 p-1.5 rounded-lg">
-                <ShieldCheck className="w-5 h-5 text-rose-300" />
-              </div>
-              <p className="font-medium">Encrypted medical data storage</p>
+        <div className="max-w-sm relative z-10">
+          {/* Logo Section */}
+          <div className="flex items-center gap-3 mb-12">
+            <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-rose-500/20">
+              <Pill className="text-white w-6 h-6" />
             </div>
+            <span className="text-2xl font-bold text-white tracking-tight">MediTrack</span>
+          </div>
+
+          <h2 className="text-4xl font-semibold text-white mb-8 leading-[1.2] tracking-tight">
+            Streamlined health <br />
+            <span className="text-rose-400 font-light italic">management</span> for <br />
+            modern care.
+          </h2>
+
+          <div className="space-y-6 border-l border-white/10 pl-6">
+            <div className="flex items-start gap-4">
+              <CheckCircle2 className="w-5 h-5 text-rose-500 mt-1" />
+              <div>
+                <p className="text-white font-medium text-sm">Real-time Verification</p>
+                <p className="text-slate-400 text-xs mt-1">Instant updates between patients and providers.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <Lock className="w-5 h-5 text-rose-500 mt-1" />
+              <div>
+                <p className="text-white font-medium text-sm">Enterprise Security</p>
+                <p className="text-slate-400 text-xs mt-1">Your health data is encrypted and private.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16 pt-8 border-t border-white/5">
+            <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em]">
+              Trusted by healthcare providers in PH
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Right Side: Clerk Component */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-rose-50/30">
-        <div className="w-full max-w-md">
-          <SignIn 
-            signUpUrl="/register" 
-            forceRedirectUrl="/dashboard"
-            appearance={clerkTheme}
-          />
+      {/* Right Side: Clerk Component - Clean & Minimal */}
+      <div className="w-full lg:w-[55%] flex flex-col items-center justify-center p-8 relative">
+        {/* Subtle background element to prevent it from looking "flat" */}
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-rose-50/20 blur-[100px] -z-10" />
+        
+        <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="text-center mb-10 lg:hidden">
+            <h1 className="text-2xl font-bold text-slate-900">Welcome Back</h1>
+            <p className="text-slate-500 text-sm mt-2">Sign in to manage your health schedule</p>
+          </div>
+          
+          <div className="clerk-auth-wrapper shadow-[0_20px_50px_rgba(225,29,72,0.05)] rounded-2xl overflow-hidden">
+            <SignIn 
+              signUpUrl="/register" 
+              forceRedirectUrl="/dashboard"
+              appearance={clerkTheme}
+            />
+          </div>
+          
+          <p className="mt-8 text-center text-slate-400 text-xs">
+            © 2026 MediTrack Health. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
