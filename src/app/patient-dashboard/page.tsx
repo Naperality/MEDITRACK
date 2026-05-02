@@ -237,13 +237,13 @@ export default async function PatientDashboard() {
                           {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
                             hour: '2-digit', 
                             minute: '2-digit', 
-                             
+                            timeZone: 'Asia/Manila' 
                           })} 
                           <span className="mx-1 opacity-30">•</span>
                           {new Date(log.logged_at).toLocaleDateString('en-PH', { 
                             month: 'short', 
                             day: 'numeric', 
-                            
+                            timeZone: 'Asia/Manila' 
                           })}
                         </p>
                       </div>

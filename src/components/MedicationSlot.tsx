@@ -46,9 +46,21 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
 
   const handleAction = async () => {
     if (status !== 'PENDING') return;
+    // 1. Get the current date/time in Manila
+    const now = new Date();
+    const manilaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+
+    // 2. Map the "scheduled" time (e.g., "08:00") to today's date
+    const [hours, minutes] = time.split(':').map(Number);
+    const scheduledToday = new Date(manilaTime);
+    scheduledToday.setHours(hours, minutes, 0, 0);
+
+    // 3. Convert that specific Manila moment to a UTC ISO String
+    // .toISOString() always converts the date object to UTC format (Z)
+    const utcTimestamp = scheduledToday.toISOString();
     setStatus('TAKEN');
     try {
-      await recordMedicationAction(med.id, userId, med.name, time);
+      await recordMedicationAction(med.id, userId, med.name, utcTimestamp);
     } catch (error) {
       console.error("Action failed:", error);
       setStatus('PENDING');
