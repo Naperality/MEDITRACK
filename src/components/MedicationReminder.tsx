@@ -1,84 +1,86 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import { recordMedicationAction } from "@/app/actions/medication";
+import { Check, Lock, Clock, AlertCircle } from "lucide-react";
+import { useState } from "react";
 
-export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], todaysLogs: any[] }) {
-  useEffect(() => {
-    const checkSchedule = () => {
-      // 1. Get precise Manila time components
-      const now = new Date();
-      const manilaTimeStr = now.toLocaleTimeString('en-GB', {
-        timeZone: 'Asia/Manila',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+interface SlotProps {
+  med: any;
+  time: string;
+  userId: string;
+  dbStatus?: 'TAKEN' | 'MISSED';
+}
 
-      // 2. Get current Manila date for date-range validation
-      const manilaDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+export default function MedicationSlot({ med, time, userId, dbStatus }: SlotProps) {
+  const [loading, setLoading] = useState(false);
 
-      meds.forEach(med => {
-        // --- VALIDATION LOGIC ---
-        // A. Is it scheduled for this exact minute?
-        const isScheduledNow = med.scheduled_times?.includes(manilaTimeStr);
-        
-        // B. Is today within the start/end date range?
-        const isWithinRange = manilaDateStr >= med.start_date && 
-                             (med.end_date ? manilaDateStr <= med.end_date : true);
+  // --- TIME LOGIC ---
+  const [hours, minutes] = time.split(':').map(Number);
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  const slotTime = new Date(now);
+  slotTime.setHours(hours, minutes, 0, 0);
 
-        // C. Has it already been dealt with (Taken or Missed)?
-        const alreadyLogged = todaysLogs.some(log =>
-          log.med_id === med.id && log.scheduled_slot === manilaTimeStr
-        );
+  const isFuture = now < slotTime;
+  const isTaken = dbStatus === 'TAKEN';
+  const isMissed = dbStatus === 'MISSED';
 
-        if (isScheduledNow && isWithinRange && !alreadyLogged) {
-          // --- SLEEK NOTIFICATION DESIGN ---
-          toast.custom((t) => (
-            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} 
-              max-w-md w-full bg-slate-900 shadow-2xl rounded-[1.5rem] pointer-events-auto 
-              flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-white/10`}>
-              <div className="flex-1 w-0 p-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 pt-0.5">
-                    <div className="h-10 w-10 rounded-full bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
-                      <span className="text-white text-lg">💊</span>
-                    </div>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-sm font-black text-white tracking-tight">
-                      Medication Alert
-                    </p>
-                    <p className="mt-1 text-xs font-medium text-slate-400">
-                      It's time for <span className="text-rose-400 font-bold">{med.name}</span> ({med.dosage})
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex border-l border-white/5">
-                <button
-                  onClick={() => toast.dismiss(t.id)}
-                  className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-xs font-black uppercase tracking-widest text-rose-400 hover:text-rose-300 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          ), { duration: 6000 });
+  const handleTake = async () => {
+    if (isFuture || isTaken || isMissed || loading) return;
+    setLoading(true);
+    await recordMedicationAction(med.id, userId, med.name, time);
+    setLoading(false);
+  };
 
-          // Play Sound
-          new Audio('/alert.mp3').play().catch(() => {});
-        }
-      });
-    };
+  // Status Styles Logic
+  let buttonStyle = "bg-slate-50 text-slate-400 border-slate-100 cursor-not-allowed";
+  let statusText = "Locked";
+  let Icon = Lock;
 
-    // Run check every minute
-    const intervalId = setInterval(checkSchedule, 60000);
-    // Initial check on mount
-    checkSchedule();
+  if (isTaken) {
+    buttonStyle = "bg-green-50 text-green-600 border-green-100 cursor-default";
+    statusText = "Taken";
+    Icon = Check;
+  } else if (isMissed) {
+    buttonStyle = "bg-rose-50 text-rose-600 border-rose-100 cursor-default";
+    statusText = "Missed";
+    Icon = AlertCircle;
+  } else if (!isFuture) {
+    buttonStyle = "bg-white text-slate-900 border-slate-200 hover:border-rose-500 hover:text-rose-600 shadow-sm active:scale-95";
+    statusText = "Take Now";
+    Icon = Clock;
+  }
 
-    return () => clearInterval(intervalId);
-  }, [meds, todaysLogs]);
+  return (
+    <button
+      onClick={handleTake}
+      disabled={isFuture || isTaken || isMissed || loading}
+      className={`
+        relative flex flex-col items-center justify-center 
+        w-full py-4 px-2 rounded-2xl border-2 transition-all duration-200
+        ${buttonStyle}
+      `}
+    >
+      <Icon size={18} className="mb-1.5" />
+      
+      {/* Time Label */}
+      <span className="text-[11px] font-black uppercase tracking-tighter mb-0.5">
+        {time}
+      </span>
 
-  return null;
+      {/* Status Text - Using responsive text sizes to prevent overflow */}
+      <span className={`
+        text-[9px] font-bold uppercase tracking-widest truncate max-w-full
+        ${loading ? "opacity-0" : "opacity-100"}
+      `}>
+        {statusText}
+      </span>
+
+      {/* Loading Spinner */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+    </button>
+  );
 }
