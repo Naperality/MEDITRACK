@@ -9,38 +9,44 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
 
   useEffect(() => {
     const checkStatus = () => {
-      // If DB already has a status (TAKEN/MISSED), prioritize that
       if (dbStatus) {
         setStatus(dbStatus);
         return;
       }
 
-      // Get current time specifically for Asia/Manila
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+      // 1. Get exact current time in Manila
+      const now = new Date();
+      const manilaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
 
+      // 2. Parse scheduled time (HH:mm)
       const [hours, minutes] = time.split(':').map(Number);
-      const scheduledToday = new Date(now);
+      
+      // 3. Create scheduled date based on Manila's current date
+      const scheduledToday = new Date(manilaTime);
       scheduledToday.setHours(hours, minutes, 0, 0);
 
-      // Take Window: 1 hour before scheduled time
-      const oneHourBefore = new Date(scheduledToday.getTime() - 60 * 60 * 1000);
-      // Missed Window: 2 hours after scheduled time
-      const twoHoursAfter = new Date(scheduledToday.getTime() + 120 * 60 * 1000);
+      const nowMs = manilaTime.getTime();
+      const scheduledMs = scheduledToday.getTime();
 
-      if (now > twoHoursAfter) {
-        // If it's 1 second past the scheduled time and not in DB, it's MISSED
+      // Define Windows (in milliseconds)
+      const oneHour = 60 * 60 * 1000;
+      const twoHours = 120 * 60 * 1000;
+
+      // Logic:
+      // PENDING: From 1 hour before until 2 hours after
+      // MISSED: If current time is more than 2 hours past scheduled
+      // LOCKED: If current time is more than 1 hour before scheduled
+      
+      if (nowMs > scheduledMs + twoHours) {
         setStatus('MISSED');
-      } else if (now >= oneHourBefore && now <= twoHoursAfter) {
-        // If we are within 1 hour of the time
+      } else if (nowMs >= scheduledMs - oneHour && nowMs <= scheduledMs + twoHours) {
         setStatus('PENDING');
       } else {
-        // Otherwise, it's too early
         setStatus('LOCKED');
       }
     };
 
     checkStatus();
-    // Check every 15 seconds to update the UI in real-time
     const interval = setInterval(checkStatus, 15000);
     return () => clearInterval(interval);
   }, [time, dbStatus]);
