@@ -57,7 +57,10 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 
   await supabaseAdmin.from('medications').update({ last_taken_at: now }).eq('id', medId);
 
-  const formattedSlot = scheduledTime.length === 5 ? `${scheduledTime}:00` : scheduledTime;
+  // Ensure it's ALWAYS HH:mm:ss (e.g., "13:00" -> "13:00:00")
+  const formattedSlot = scheduledTime.split(':').length === 2 
+    ? `${scheduledTime}:00` 
+    : scheduledTime;
 
   const { error: logError } = await supabaseAdmin.from('medication_logs').insert({
     med_id: medId,

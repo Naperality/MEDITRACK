@@ -173,19 +173,10 @@ export default async function PatientDashboard() {
                           {med.scheduled_times.map((time: string) => {
                             // Find a log where the med_id matches AND the time starts with our slot time
                             // (This handles "13:00" vs "13:00:00" automatically)
-                              const logForThisSlot = todaysLogs.find(l => {
-                              const isSameMed = l.med_id === med.id;
-                              
-                              // Get the HH:mm (e.g., "13:00")
-                              const slotHHMM = time.slice(0, 5);
-                              
-                              // This matches IF:
-                              // 1. It's the old format "13:00:00" (starts with 13:00)
-                              // 2. OR it's the new format "2026-05-02T13:00..." (contains 13:00)
-                              const isTimeMatch = l.scheduled_slot.includes(slotHHMM);
-
-                              return isSameMed && isTimeMatch;
-                            });
+                            const logForThisSlot = todaysLogs.find(l => 
+                              l.med_id === med.id && 
+                              l.scheduled_slot.startsWith(time.slice(0, 5))
+                            );
 
                             return (
                               <MedicationSlot 
