@@ -168,16 +168,26 @@ export default async function PatientDashboard() {
                           <Clock className="w-3 h-3 text-slate-300" />
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Today's Schedule</p>
                         </div>
+                        {/* Change the dbStatus logic to this: */}
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-                          {med.scheduled_times.map((time: string) => (
-                            <MedicationSlot 
-                              key={time} 
-                              med={med} 
-                              time={time} 
-                              userId={userId} 
-                              dbStatus={todaysLogs.find(l => l.med_id === med.id && l.scheduled_slot === time)?.status} 
-                            />
-                          ))}
+                          {med.scheduled_times.map((time: string) => {
+                            // Find a log where the med_id matches AND the time starts with our slot time
+                            // (This handles "13:00" vs "13:00:00" automatically)
+                            const logForThisSlot = todaysLogs.find(l => 
+                              l.med_id === med.id && 
+                              l.scheduled_slot.startsWith(time.slice(0, 5))
+                            );
+
+                            return (
+                              <MedicationSlot 
+                                key={time} 
+                                med={med} 
+                                time={time} 
+                                userId={userId} 
+                                dbStatus={logForThisSlot?.status} 
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
