@@ -175,7 +175,7 @@ export default async function PatientDashboard() {
                             // (This handles "13:00" vs "13:00:00" automatically)
                             const logForThisSlot = todaysLogs.find(l => 
                               l.med_id === med.id && 
-                              l.scheduled_slot.startsWith(time.slice(0, 5))
+                              l.scheduled_slot.includes(time.slice(0, 5))
                             );
 
                             return (
