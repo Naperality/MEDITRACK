@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
-/* 1. MediTrack Medical Theme Configuration */
+/* 1. MediTrack Medical Theme Configuration (Blush Edition) */
 @theme {
-  /* Custom Medical Colors */
-  --color-emerald-50: #ecfdf5;
-  --color-emerald-100: #d1fae5;
-  --color-emerald-600: #059669;
-  --color-emerald-700: #047857;
+  /* Custom Medical Pink/Rose Colors */
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
   
   --color-slate-50: #f8fafc;
   --color-slate-600: #475569;
@@ -19,12 +20,11 @@
 /* 2. Base Styles */
 @layer base {
   :root {
-    --background: #f0fdfa; 
+    --background: #fffafa; /* Soft snow-rose tint */
     --foreground: #0f172a;
   }
 
   body {
-    /* Changed from @apply to standard CSS to fix Vercel Build Error */
     background-color: var(--background);
     color: var(--foreground);
     font-family: ui-sans-serif, system-ui, sans-serif;
@@ -45,14 +45,14 @@
   }
 }
 
-/* 4. Medical UI Scrollbar */
+/* 4. Medical UI Scrollbar (Pink Theme) */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #fff1f2;
 }
 ::-webkit-scrollbar-thumb {
-  background: #10b981;
+  background: #fb7185;
   border-radius: 10px;
 }

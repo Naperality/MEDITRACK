@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-// Viewport handles the mobile theme color (the bar at the very top of the phone)
+// Viewport handles the mobile theme color (Updated to match Rose-600)
 export const viewport: Viewport = {
-  themeColor: "#eb2577",
+  themeColor: "#e11d48",
 };
 
 export default function RootLayout({
