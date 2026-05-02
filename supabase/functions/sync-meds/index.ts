@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import webpush from "https://esm.sh/web-push";
 
-// 1. Setup VAPID with your saved secrets from the dashboard
+// 1. Setup VAPID
 webpush.setVapidDetails(
   'mailto:support@yourdomain.com', 
   Deno.env.get('VAPID_PUBLIC_KEY')!,
@@ -15,7 +15,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS for browser-side triggers
+  // Handle CORS
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
@@ -26,24 +26,23 @@ serve(async (req) => {
 
     // 2. Get high-accuracy current time in Manila
     const now = new Date();
-    const manilaFormatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Manila",
-      hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false,
-      year: 'numeric', month: '2-digit', day: '2-digit'
+    
+    // We get the "Wall Clock" time for Manila to compare against scheduled slots
+    const manilaString = now.toLocaleString("en-US", { 
+      timeZone: "Asia/Manila", 
+      hour12: false 
     });
     
-    const parts = manilaFormatter.formatToParts(now);
-    const currentHour = parseInt(parts.find(p => p.type === 'hour')?.value || "0");
-    const currentMinute = parseInt(parts.find(p => p.type === 'minute')?.value || "0");
-    const todayDateStr = `${parts.find(p => p.type === 'year')?.value}-${parts.find(p => p.type === 'month')?.value}-${parts.find(p => p.type === 'day')?.value}`;
-
-    // Helper for backfilling missed doses
-    const nowPH = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    // Extract PH components safely
+    const phDateOnly = now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // YYYY-MM-DD
+    const phTimePart = manilaString.split(', ')[1];
+    const [currentHour, currentMinute] = phTimePart.split(':').map(Number);
 
     // 3. Fetch Data
     const { data: meds, error: medsError } = await supabase.from('medications').select('*');
     if (medsError) throw medsError;
 
+    // Get existing logs for the current day to avoid duplicates
     const { data: existingLogs } = await supabase
       .from('medication_logs')
       .select('med_id, scheduled_slot, logged_at');
@@ -51,22 +50,19 @@ serve(async (req) => {
     const logsToInsert = [];
 
     for (const med of meds) {
-      const startDate = new Date(med.start_date + "T00:00:00+08:00");
-      
       for (const slot of med.scheduled_times) {
         const [slotHours, slotMinutes] = slot.split(':').map(Number);
         
-        // --- A. NOTIFICATION LOGIC (Real-time) ---
+        // --- A. NOTIFICATION LOGIC (Real-time trigger) ---
         const isScheduledForNow = currentHour === slotHours && currentMinute === slotMinutes;
 
         if (isScheduledForNow) {
-          // Check if already notified/logged for this slot TODAY
-          const alreadyProcessedToday = existingLogs?.some(l => {
+          const alreadyNotifiedToday = existingLogs?.some(l => {
             const logDate = new Date(l.logged_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-            return l.med_id === med.id && l.scheduled_slot === slot && logDate === todayDateStr;
+            return l.med_id === med.id && l.scheduled_slot === slot && logDate === phDateOnly;
           });
 
-          if (!alreadyProcessedToday) {
+          if (!alreadyNotifiedToday) {
             const { data: profile } = await supabase
               .from('profiles')
               .select('push_subscription')
@@ -87,34 +83,46 @@ serve(async (req) => {
         }
 
         // --- B. MISSED LOG LOGIC (Backfilling History) ---
-        let checkDate = new Date(startDate);
+        // Iterate day-by-day from start_date to today
+        let checkDate = new Date(med.start_date);
+        const nowPH = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+
         while (checkDate <= nowPH) {
-          const slotTimePH = new Date(checkDate);
-          slotTimePH.setHours(slotHours, slotMinutes, 0, 0);
+          // Create a date object for this specific slot on 'checkDate'
+          const slotTime = new Date(checkDate);
+          slotTime.setHours(slotHours, slotMinutes, 0, 0);
 
-          const isPast = nowPH > slotTimePH;
-          const slotComparisonISO = slotTimePH.toISOString();
-          const isWithinRange = slotComparisonISO >= med.start_date && 
-                               (med.end_date ? slotComparisonISO <= med.end_date : true);
+          const gracePeriodMs = 120 * 60 * 1000; // 2 hours
+          const isPastGrace = nowPH.getTime() > (slotTime.getTime() + gracePeriodMs);
+          
+          const currentSlotDateStr = slotTime.toLocaleDateString("en-CA");
+          const isWithinRange = currentSlotDateStr >= med.start_date && 
+                               (med.end_date ? currentSlotDateStr <= med.end_date : true);
 
-          if (isPast && isWithinRange) {
-            const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+          if (isPastGrace && isWithinRange) {
             const alreadyLogged = existingLogs?.some(l => {
               const logDateString = new Date(l.logged_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-              return l.med_id === med.id && l.scheduled_slot === slot && logDateString === currentSlotDateString;
+              return l.med_id === med.id && l.scheduled_slot === slot && logDateString === currentSlotDateStr;
             });
 
             if (!alreadyLogged) {
+              // Construct the ISO string with the PH offset (+08:00)
+              // We use sv-SE to get YYYY-MM-DD easily
+              const datePart = slotTime.toLocaleDateString("en-CA");
+              const timePart = `${String(slotHours).padStart(2, '0')}:${String(slotMinutes).padStart(2, '0')}:00`;
+              const manilaISO = `${datePart}T${timePart}+08:00`;
+
               logsToInsert.push({
                 med_id: med.id,
                 patient_id: med.patient_id,
                 med_name: med.name,
                 status: 'MISSED',
-                logged_at: slotTimePH.toISOString(),
+                logged_at: manilaISO, 
                 scheduled_slot: slot
               });
             }
           }
+          // Move to next day
           checkDate.setDate(checkDate.getDate() + 1);
         }
       }
@@ -128,7 +136,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      timeProcessed: `${currentHour}:${currentMinute}`,
+      timeProcessedPH: `${currentHour}:${currentMinute}`,
       missedDosesSynced: logsToInsert.length 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
