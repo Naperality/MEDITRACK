@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 /**
  * HELPER: Get current PH Time
- * Ensures the logic uses Manila time regardless of where the server is hosted.
  */
 const getPHDate = () => {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
@@ -48,14 +47,11 @@ export async function addMedication(formData: FormData, patientId: string) {
 }
 
 /**
- * 2. RECORD MEDICATION ACTION (Fixed Timeline)
+ * 2. RECORD MEDICATION ACTION
  */
 export async function recordMedicationAction(medId: number, patientId: string, medName: string, scheduledTime: string) {
-  // 1. Get the current time in Manila
   const nowPH = getPHDate();
   
-  // 2. Format it to a string that includes the +08:00 offset
-  // This prevents the 8-hour shift in your database and dashboard
   const year = nowPH.getFullYear();
   const month = String(nowPH.getMonth() + 1).padStart(2, '0');
   const day = String(nowPH.getDate()).padStart(2, '0');
@@ -65,13 +61,11 @@ export async function recordMedicationAction(medId: number, patientId: string, m
   
   const manilaISO = `${year}-${month}-${day}T${hh}:${mm}:${ss}+08:00`;
 
-  // Update the medication record
   await supabase
     .from('medications')
     .update({ last_taken_at: manilaISO })
     .eq('id', medId);
 
-  // Insert the activity log
   const { error: logError } = await supabase
     .from('medication_logs')
     .insert({
@@ -79,7 +73,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
       patient_id: patientId,
       med_name: medName,
       status: 'TAKEN',
-      logged_at: manilaISO, // Now correctly shows Manila time
+      logged_at: manilaISO,
       scheduled_slot: scheduledTime
     });
 
@@ -90,13 +84,12 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 }
 
 /**
- * 3. SYNC MISSED DOSES (Fixed: Dynamic Date Range)
+ * 3. SYNC MISSED DOSES (The Fixed Version)
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
   
-  // 1. Fetch all logs for this patient. 
-  // We remove the .gte filter to ensure we can check against the full history.
+  // Fetch logs to prevent duplicates
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
@@ -105,37 +98,36 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
   const logsToInsert = [];
 
   for (const med of meds) {
-    // Convert start_date (YYYY-MM-DD) to a Manila-aligned Date object for comparison
-    // Split the YYYY-MM-DD string to avoid UTC auto-conversion issues
+    // Parse start_date accurately for Manila
     const [sYear, sMonth, sDay] = med.start_date.split('-').map(Number);
-    // Create the date object specifically for Manila 00:00:00
-    const startDate = new Date(new Date(sYear, sMonth - 1, sDay, 0, 0, 0).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-    
+    const startDatePH = new Date(sYear, sMonth - 1, sDay, 0, 0, 0);
+
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
       
-      // Start checking from the medication's start date
-      let checkDate = new Date(startDate);
+      // CRITICAL: Create a fresh checkDate for every individual slot loop
+      let checkDate = new Date(startDatePH);
 
-      // Loop through every day from start_date until today
       while (checkDate <= nowPH) {
+        // Create a specific timestamp for this slot on this day
         const slotTimePH = new Date(checkDate);
         slotTimePH.setHours(hours, minutes, 0, 0);
 
-        // Add a 2-hour grace period (120 minutes) before marking as MISSED
+        // 1. Check if the time has actually passed (with 2-hour grace period)
         const gracePeriodMs = 120 * 60 * 1000; 
         const isPast = nowPH.getTime() > (slotTimePH.getTime() + gracePeriodMs);
         
-        // Use your existing ISO comparison logic for the range
-        const slotComparisonISO = slotTimePH.toISOString();
-        const isWithinRange = slotComparisonISO >= med.start_date && 
-                             (med.end_date ? slotComparisonISO <= med.end_date : true);
+        // 2. Check if the slot falls within the medication's active date range
+        const slotDateString = slotTimePH.toLocaleDateString("en-CA"); // YYYY-MM-DD
+        const isWithinRange = slotDateString >= med.start_date && 
+                             (med.end_date ? slotDateString <= med.end_date : true);
         
         if (isPast && isWithinRange) {
+          // 3. Check if this specific slot has already been logged (Taken or Missed)
           const alreadyLogged = existingLogs?.some(l => {
             const logDate = new Date(l.logged_at);
             const dbDateString = logDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-            const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+            const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA");
 
             return (
               l.med_id === med.id &&
@@ -145,6 +137,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
           });
 
           if (!alreadyLogged) {
+            // Format Manila ISO manually to force +08:00 offset
             const year = slotTimePH.getFullYear();
             const month = String(slotTimePH.getMonth() + 1).padStart(2, '0');
             const day = String(slotTimePH.getDate()).padStart(2, '0');
@@ -163,7 +156,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
             });
           }
         }
-        // Move to the next day
+        // Move to next calendar day
         checkDate.setDate(checkDate.getDate() + 1);
       }
     }
@@ -174,11 +167,10 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     if (!insertError) {
       revalidatePath('/patient-dashboard');
       revalidatePath('/caregiver-dashboard');
-    } else {
-      console.error("Sync Insert Error:", insertError.message);
     }
   }
 }
+
 /**
  * 4. DELETE MEDICATION
  */
