@@ -12,7 +12,7 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
 
   useEffect(() => {
     const checkStatus = () => {
-      if (dbStatus) {
+      if (dbStatus || status === 'TAKEN') {
         setStatus(dbStatus);
         return;
       }
