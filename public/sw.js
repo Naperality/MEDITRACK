@@ -4,7 +4,7 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.body,
-    icon: '/icon-192x192.png', // Make sure this exists in your public folder
+    icon: '/android-chrome-192x192.png', // Make sure this exists in your public folder
     badge: '/favicon.ico',
     vibrate: [200, 100, 200],
     data: { url: '/patient-dashboard' }

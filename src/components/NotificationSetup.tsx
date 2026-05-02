@@ -1,28 +1,46 @@
 'use client';
 import { useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { saveSubscription } from '@/app/actions/notifications'; // Import the action
+import { saveSubscription } from '@/app/actions/notifications';
+
+// Helper function to convert VAPID string to required format
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export default function NotificationSetup() {
   const { user } = useUser();
 
   useEffect(() => {
-    // Ensure we are in the browser and user exists
     if (typeof window === 'undefined' || !user) return;
 
     const registerAndSubscribe = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
+        
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') return;
 
+        // FIX: Convert the string key to Uint8Array
+        const convertedVapidKey = urlBase64ToUint8Array('BBt22uMz4mbH9MGQfELu9IhxL4LjPeLX8snOp0NIv-veKB8JHqHaKeS58EPonBRlrkNrAXq_1tI6qqvsKOxU-iM');
+
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: 'BBt22uMz4mbH9MGQfELu9IhxL4LjPeLX8snOp0NIv-veKB8JHqHaKeS58EPonBRlrkNrAXq_1tI6qqvsKOxU-iM' 
+          applicationServerKey: convertedVapidKey
         });
 
-        // Use the Server Action instead of the Supabase Client
         await saveSubscription(user.id, subscription);
+        console.log("Successfully subscribed to background notifications!");
 
       } catch (err) {
         console.error('Push subscription failed:', err);
@@ -32,5 +50,5 @@ export default function NotificationSetup() {
     registerAndSubscribe();
   }, [user]);
 
-  return null;
+  return null; // Stays invisible as requested
 }
