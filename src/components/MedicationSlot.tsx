@@ -56,10 +56,14 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
   };
 
   const styles = {
-    TAKEN: 'bg-green-50 border-green-100 text-green-600 cursor-not-allowed',
-    MISSED: 'bg-rose-50 border-rose-100 text-rose-600 cursor-not-allowed',
-    LOCKED: 'bg-slate-50 border-slate-100 text-slate-400 cursor-not-allowed opacity-60',
-    PENDING: 'bg-white border-rose-500 text-rose-600 shadow-sm ring-4 ring-rose-50 hover:scale-105 cursor-pointer active:scale-95'
+    // Use Emerald for Success
+    TAKEN: 'bg-emerald-50 border-emerald-100 text-emerald-600 cursor-not-allowed',
+    // Use Amber for Missed (less aggressive than pink/red)
+    MISSED: 'bg-amber-50 border-amber-100 text-amber-700 cursor-not-allowed',
+    // Use Slate for Locked
+    LOCKED: 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-50',
+    // Use Indigo/Violet for Pending (High contrast, distinct from Rose)
+    PENDING: 'bg-white border-indigo-500 text-indigo-600 shadow-sm ring-4 ring-indigo-50 hover:scale-105 cursor-pointer active:scale-95'
   };
 
   return (
@@ -75,10 +79,10 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
     >
       {/* Small Icon + Status Text row */}
       <div className="flex items-center gap-1 mb-1">
-        {status === 'TAKEN' && <CheckCircle2 size={10} />}
-        {status === 'MISSED' && <AlertCircle size={10} />}
+        {status === 'TAKEN' && <CheckCircle2 size={10} className="text-emerald-500" />}
+        {status === 'MISSED' && <AlertCircle size={10} className="text-amber-500" />}
         {status === 'LOCKED' && <Lock size={10} />}
-        {status === 'PENDING' && <Clock size={10} className="animate-pulse" />}
+        {status === 'PENDING' && <Clock size={10} className="text-indigo-500 animate-pulse" />}
         <span className="text-[9px] font-black uppercase tracking-tighter opacity-80">
           {status}
         </span>
