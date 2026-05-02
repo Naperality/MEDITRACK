@@ -1,5 +1,5 @@
 'use server'
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -23,7 +23,7 @@ export async function addMedication(formData: FormData, patientId: string) {
   const instructions = formData.get("instructions") as string;
   const scheduled_times = formData.getAll("scheduled_times") as string[];
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('medications')
     .insert({
       patient_id: patientId,
@@ -55,15 +55,17 @@ export async function recordMedicationAction(medId: number, patientId: string, m
   // Using Intl to format the string correctly for Supabase timestamptz
   const manilaISO = nowPH.toLocaleString("sv-SE", { timeZone: "Asia/Manila" }).replace(' ', 'T') + "+08:00";
 
-  await supabase.from('medications').update({ last_taken_at: manilaISO }).eq('id', medId);
+  await supabaseAdmin.from('medications').update({ last_taken_at: manilaISO }).eq('id', medId);
 
-  const { error: logError } = await supabase.from('medication_logs').insert({
+  const formattedSlot = scheduledTime.length === 5 ? `${scheduledTime}:00` : scheduledTime;
+
+  const { error: logError } = await supabaseAdmin.from('medication_logs').insert({
     med_id: medId,
     patient_id: patientId,
     med_name: medName,
     status: 'TAKEN',
     logged_at: manilaISO,
-    scheduled_slot: scheduledTime
+    scheduled_slot: formattedSlot
   });
 
   if (logError) console.error("Logging error:", logError.message);
@@ -76,7 +78,7 @@ export async function recordMedicationAction(medId: number, patientId: string, m
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
-  const { data: existingLogs } = await supabase
+  const { data: existingLogs } = await supabaseAdmin
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
     .eq('patient_id', patientId);
@@ -127,7 +129,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
   }
 
   if (logsToInsert.length > 0) {
-    await supabase.from('medication_logs').insert(logsToInsert);
+    await supabaseAdmin.from('medication_logs').insert(logsToInsert);
     revalidatePath('/patient-dashboard');
     revalidatePath('/caregiver-dashboard');
   }
@@ -136,7 +138,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
  * 4. DELETE MEDICATION
  */
 export async function deleteMedication(medId: number) {
-  await supabase.from('medications').delete().eq('id', medId);
+  await supabaseAdmin.from('medications').delete().eq('id', medId);
   revalidatePath('/caregiver-dashboard');
   revalidatePath('/patient-dashboard');
 }
