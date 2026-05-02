@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export default async function DashboardRedirect() {
   // Get the session and user data from Clerk
@@ -17,7 +17,7 @@ export default async function DashboardRedirect() {
   const metaRole = user.unsafeMetadata?.requested_role;
 
   // 2. Database Check: Fetch the role from your Supabase 'profiles' table
-  const { data: profile } = await supabase
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', userId)

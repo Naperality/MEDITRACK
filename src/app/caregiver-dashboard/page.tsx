@@ -1,6 +1,6 @@
 // app/caregiver/page.tsx
 import { auth } from "@clerk/nextjs/server";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import { UserButton } from "@clerk/nextjs";
 import { linkPatient } from "@/app/actions/caregiver";
 import AddMedicationForm from "@/components/AddMedicationForm";

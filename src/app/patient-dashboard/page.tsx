@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import MedicationReminder from "@/components/MedicationReminder";
 import MedicationSlot from "@/components/MedicationSlot";
 import SyncTrigger from "@/components/SyncTrigger";
