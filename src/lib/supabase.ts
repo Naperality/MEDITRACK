@@ -1,9 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-export const supabase = createClient(
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+// Standard client for hooks and basic calls
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using Service Role on server-side is safe
-
-)
+// Helper to create a client with the Clerk token for Server Components/Actions
+export const createClerkSupabaseClient = (clerkToken: string) => {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${clerkToken}`,
+      },
+    },
+  })
+}
