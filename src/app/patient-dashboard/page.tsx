@@ -52,7 +52,7 @@ export default async function PatientDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 lg:p-12">
-      {/* <NotificationSetup /> ADD THIS HERE */}
+      <NotificationSetup /> ADD THIS HERE
       <SyncTrigger />
       <MedicationReminder meds={meds || []} todaysLogs={todaysLogs} />
 

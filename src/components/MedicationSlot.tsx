@@ -22,13 +22,15 @@ export default function MedicationSlot({ med, time, dbStatus, userId }: any) {
       const scheduledToday = new Date(now);
       scheduledToday.setHours(hours, minutes, 0, 0);
 
-      // Window to take medication (e.g., 1 hour before scheduled time)
+      // Take Window: 1 hour before scheduled time
       const oneHourBefore = new Date(scheduledToday.getTime() - 60 * 60 * 1000);
+      // Missed Window: 2 hours after scheduled time
+      const twoHoursAfter = new Date(scheduledToday.getTime() + 120 * 60 * 1000);
 
-      if (now > scheduledToday) {
+      if (now > twoHoursAfter) {
         // If it's 1 second past the scheduled time and not in DB, it's MISSED
         setStatus('MISSED');
-      } else if (now >= oneHourBefore && now <= scheduledToday) {
+      } else if (now >= oneHourBefore && now <= twoHoursAfter) {
         // If we are within 1 hour of the time
         setStatus('PENDING');
       } else {

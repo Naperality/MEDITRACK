@@ -122,7 +122,9 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
         const slotTimePH = new Date(checkDate);
         slotTimePH.setHours(hours, minutes, 0, 0);
 
-        const isPast = nowPH > slotTimePH;
+        // Add a 2-hour grace period (120 minutes) before marking as MISSED
+        const gracePeriodMs = 120 * 60 * 1000; 
+        const isPast = nowPH.getTime() > (slotTimePH.getTime() + gracePeriodMs);
         
         // Use your existing ISO comparison logic for the range
         const slotComparisonISO = slotTimePH.toISOString();
