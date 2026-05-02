@@ -4,6 +4,6 @@ export const supabase = createClient(
 
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
 
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using Service Role on server-side is safe
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // Using Service Role on server-side is safe
 
 )
