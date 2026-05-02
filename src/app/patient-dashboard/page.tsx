@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -193,20 +194,20 @@ export default async function PatientDashboard() {
               Activity Log
             </h2>
             
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+            <div className="bg-white rounded-[2.5rem] border border-slate-100 p-6 sm:p-8 shadow-sm">
               <div className="space-y-8 relative">
-                {/* Vertical Timeline Line */}
                 <div className="absolute left-[19px] top-2 bottom-2 w-[2px] bg-slate-50" />
 
                 {recentLogs.map((log) => (
-                  <div key={log.id} className="flex gap-4 relative z-10">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border-4 border-white ${log.status === 'TAKEN' ? 'bg-green-500 text-white' : 'bg-rose-500 text-white'}`}>
+                  <div key={log.id} className="flex gap-4 relative z-10 group">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border-4 border-white transition-transform group-hover:scale-110 ${
+                      log.status === 'TAKEN' ? 'bg-green-500 text-white' : 'bg-rose-500 text-white'
+                    }`}>
                       {log.status === 'TAKEN' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                     </div>
-                    <div>
+                    <div className="pt-1">
                       <p className="text-sm font-black text-slate-800 leading-none mb-1">{log.med_name}</p>
                       <div className="flex items-center gap-2 text-slate-400">
-                        <Clock size={10} className="text-slate-300" />
                         <p className="text-[10px] font-bold uppercase tracking-tight">
                           {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
                             hour: '2-digit', 
@@ -232,9 +233,13 @@ export default async function PatientDashboard() {
                 )}
               </div>
               
-              <button className="w-full mt-8 py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-colors">
-                View Full History
-              </button>
+              {/* Updated Button with Link */}
+              <Link 
+                href="/patient-dashboard/history" 
+                className="block w-full mt-8 py-4 bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all text-center"
+              >
+                View More
+              </Link>
             </div>
           </aside>
 
