@@ -90,13 +90,11 @@ export async function recordMedicationAction(medId: number, patientId: string, m
 }
 
 /**
- * 3. SYNC MISSED DOSES (Fixed: Dynamic Date Range)
+ * 3. SYNC MISSED DOSES (Fixed: Clean Date Handling)
  */
 export async function syncMissedDoses(meds: any[], patientId: string) {
   const nowPH = getPHDate();
   
-  // 1. Fetch all logs for this patient. 
-  // We remove the .gte filter to ensure we can check against the full history.
   const { data: existingLogs } = await supabase
     .from('medication_logs')
     .select('med_id, scheduled_slot, logged_at')
@@ -105,52 +103,50 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
   const logsToInsert = [];
 
   for (const med of meds) {
-    // Convert start_date (YYYY-MM-DD) to a Manila-aligned Date object for comparison
-    // Split the YYYY-MM-DD string to avoid UTC auto-conversion issues
+    // Parse the start date (YYYY-MM-DD)
     const [sYear, sMonth, sDay] = med.start_date.split('-').map(Number);
-    // Create the date object specifically for Manila 00:00:00
-    const startDate = new Date(new Date(sYear, sMonth - 1, sDay, 0, 0, 0).toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-    
+
     for (const slot of med.scheduled_times) {
       const [hours, minutes] = slot.split(':').map(Number);
       
-      // Start checking from the medication's start date
-      let checkDate = new Date(startDate);
+      // CRITICAL: Always start a fresh date object for each slot loop
+      // Start at midnight on the start_date in Manila
+      let checkDate = new Date(sYear, sMonth - 1, sDay, 0, 0, 0);
 
-      // Loop through every day from start_date until today
+      // Loop day by day
       while (checkDate <= nowPH) {
+        // Create a specific timestamp for this specific slot on this specific day
         const slotTimePH = new Date(checkDate);
         slotTimePH.setHours(hours, minutes, 0, 0);
 
-        // Add a 2-hour grace period (120 minutes) before marking as MISSED
         const gracePeriodMs = 120 * 60 * 1000; 
         const isPast = nowPH.getTime() > (slotTimePH.getTime() + gracePeriodMs);
         
-        // Use your existing ISO comparison logic for the range
-        const slotComparisonISO = slotTimePH.toISOString();
-        const isWithinRange = slotComparisonISO >= med.start_date && 
-                             (med.end_date ? slotComparisonISO <= med.end_date : true);
+        // Simple YYYY-MM-DD comparison for range
+        const currentDateString = slotTimePH.toLocaleDateString("en-CA"); // Results in "YYYY-MM-DD"
+        const isWithinRange = currentDateString >= med.start_date && 
+                             (med.end_date ? currentDateString <= med.end_date : true);
         
         if (isPast && isWithinRange) {
           const alreadyLogged = existingLogs?.some(l => {
             const logDate = new Date(l.logged_at);
             const dbDateString = logDate.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-            const currentSlotDateString = slotTimePH.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-
             return (
               l.med_id === med.id &&
               l.scheduled_slot === slot &&
-              dbDateString === currentSlotDateString
+              dbDateString === currentDateString
             );
           });
 
           if (!alreadyLogged) {
+            // MANUALLY construct the ISO string to avoid toISOString() converting to UTC
             const year = slotTimePH.getFullYear();
             const month = String(slotTimePH.getMonth() + 1).padStart(2, '0');
             const day = String(slotTimePH.getDate()).padStart(2, '0');
             const hh = String(slotTimePH.getHours()).padStart(2, '0');
             const mm = String(slotTimePH.getMinutes()).padStart(2, '0');
             
+            // This format (YYYY-MM-DDTHH:mm:ss+08:00) is the "Gold Standard" for Supabase timestamptz
             const manilaISO = `${year}-${month}-${day}T${hh}:${mm}:00+08:00`;
 
             logsToInsert.push({
@@ -163,7 +159,7 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
             });
           }
         }
-        // Move to the next day
+        // Move to the next calendar day
         checkDate.setDate(checkDate.getDate() + 1);
       }
     }
@@ -174,8 +170,6 @@ export async function syncMissedDoses(meds: any[], patientId: string) {
     if (!insertError) {
       revalidatePath('/patient-dashboard');
       revalidatePath('/caregiver-dashboard');
-    } else {
-      console.error("Sync Insert Error:", insertError.message);
     }
   }
 }
