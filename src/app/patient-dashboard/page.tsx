@@ -6,6 +6,7 @@ import MedicationSlot from "@/components/MedicationSlot";
 import SyncTrigger from "@/components/SyncTrigger";
 import { Pill, History, Activity, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { syncMissedDoses } from "@/app/actions/medication";
+import NotificationSetup from "@/components/NotificationSetup";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -51,6 +52,7 @@ export default async function PatientDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 lg:p-12">
+      <NotificationSetup /> {/* ADD THIS HERE */}
       <SyncTrigger />
       <MedicationReminder meds={meds || []} todaysLogs={todaysLogs} />
 
