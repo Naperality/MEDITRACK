@@ -1,6 +1,6 @@
 // app/caregiver/page.tsx
 import { auth } from "@clerk/nextjs/server";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 import { UserButton } from "@clerk/nextjs";
 import { linkPatient } from "@/app/actions/caregiver";
 import AddMedicationForm from "@/components/AddMedicationForm";
@@ -16,7 +16,7 @@ export default async function CaregiverDashboard() {
 
   // 1. FETCH: Retrieve links and nested profile/medication data
   // We strictly READ here. No database updates.
-  const { data: links, error } = await supabase
+  const { data: links, error } = await supabaseAdmin
     .from('caregiver_patient')
     .select(`
       patient_id,
@@ -33,7 +33,7 @@ export default async function CaregiverDashboard() {
   const patientIds = links?.map(l => l.patient_id) || [];
 
   // 2. FETCH LOGS: Retrieve history for all linked patients
-  const { data: allLogs } = await supabase
+  const { data: allLogs } = await supabaseAdmin
     .from('medication_logs')
     .select('*')
     .in('patient_id', patientIds)

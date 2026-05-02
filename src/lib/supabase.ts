@@ -2,17 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Standard client for hooks and basic calls
+// Standard client: Safe for browser (NotificationSetup)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Helper to create a client with the Clerk token for Server Components/Actions
-export const createClerkSupabaseClient = (clerkToken: string) => {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${clerkToken}`,
-      },
-    },
-  })
-}
+// Admin client: FOR SERVER-SIDE USE ONLY (Dashboard fetching)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)

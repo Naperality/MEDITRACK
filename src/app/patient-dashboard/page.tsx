@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
-import { supabase, createClerkSupabaseClient } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 import MedicationReminder from "@/components/MedicationReminder";
 import MedicationSlot from "@/components/MedicationSlot";
 import SyncTrigger from "@/components/SyncTrigger";
@@ -12,14 +12,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PatientDashboard() {
-  const { userId, getToken } = await auth();
+  const { userId } = await auth();
   if (!userId) return null;
 
-  // Get the special Supabase token from Clerk
-  const token = await getToken({ template: 'supabase' }); 
-  const supabaseClient = createClerkSupabaseClient(token!);
-
-  const { data: meds } = await supabaseClient
+  const { data: meds } = await supabaseAdmin
     .from('medications')
     .select('*')
     .eq('patient_id', userId)
@@ -29,7 +25,7 @@ export default async function PatientDashboard() {
     await syncMissedDoses(meds, userId);
   }
   
-  const { data: allLogs } = await supabase
+  const { data: allLogs } = await supabaseAdmin
     .from('medication_logs')
     .select('*')
     .eq('patient_id', userId)
