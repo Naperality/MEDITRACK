@@ -1,18 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom'; // Required for the teleport
-import { Info, X, Clock, Calendar, Pill } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Info, X, Clock, Calendar, Pill, Trash2 } from 'lucide-react';
+// Import your existing server action
+import { deleteMedication } from '@/app/actions/management';
 
 export default function ViewMedicationModal({ med }: { med: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Ensure we are on the client before using Portals
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Prevent background scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -25,13 +25,11 @@ export default function ViewMedicationModal({ med }: { med: any }) {
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* Backdrop - Click to close */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" 
         onClick={() => setIsOpen(false)}
       />
       
-      {/* Modal Container */}
       <div 
         className="relative bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-white/20"
         onClick={(e) => e.stopPropagation()} 
@@ -89,13 +87,26 @@ export default function ViewMedicationModal({ med }: { med: any }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 bg-slate-50/80 border-t border-slate-100">
+        {/* Footer Actions - Matches Edit Style */}
+        <div className="p-6 bg-slate-50/80 border-t border-slate-100 flex gap-3">
           <button 
             onClick={() => setIsOpen(false)}
-            className="w-full py-4 bg-white border border-slate-200 rounded-2xl font-bold text-xs text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition-all shadow-sm active:scale-[0.98]"
+            className="flex-1 py-4 bg-white border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-[10px] text-slate-700 hover:bg-slate-100 transition-all shadow-sm active:scale-[0.98]"
           >
-            Close Information
+            Close
+          </button>
+          
+          <button 
+            type="button" 
+            onClick={async () => { 
+              if(confirm("Delete this medication? This action cannot be undone.")) {
+                await deleteMedication(med.id);
+                setIsOpen(false);
+              }
+            }}
+            className="bg-rose-50 text-rose-500 px-6 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center justify-center shadow-sm"
+          >
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
@@ -111,7 +122,6 @@ export default function ViewMedicationModal({ med }: { med: any }) {
         <Info size={18} />
       </button>
 
-      {/* This renders the modal at the root of the document, bypassing the grayed-out row */}
       {isOpen && createPortal(modalContent, document.body)}
     </>
   );
