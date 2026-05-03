@@ -4,6 +4,7 @@ import { ChevronDown, History, Pill, Clock, CheckCircle2, Archive } from "lucide
 import AddMedicationForm from "./AddMedicationForm";
 import UnlinkPatientButton from "@/components/UnlinkPatientButton";
 import EditMedicationModal from "@/components/EditMedicationModal";
+import ViewMedicationModal from "./ViewMedicationModal";
 
 // Note: Added caregiverId to the props to support unlinking
 export default function PatientCard({ profile, patientId, logs, caregiverId }: any) {
@@ -131,7 +132,13 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
                            {status.label}
                         </div>
                         
-                        <EditMedicationModal med={med} disabled={isCompleted} />
+                        <div className="flex items-center gap-1">
+                        {/* Always show Information Button */}
+                        <ViewMedicationModal med={med} />
+                        
+                        {/* Keep Edit Button (Disabled if completed) */}
+                          <EditMedicationModal med={med} disabled={isCompleted} />
+                        </div>
                       </div>
                     </div>
                   );
