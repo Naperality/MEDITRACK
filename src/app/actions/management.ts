@@ -79,6 +79,7 @@ export async function deleteMedication(medId: number) {
  */
 export async function discontinueMedication(medId: number, medName: string, patientId: string) {
   // 1. Mark as discontinued
+  const now = new Date().toISOString();
   const { error: updateError } = await supabaseAdmin
     .from('medications')
     .update({ is_discontinued: true }) 
@@ -90,12 +91,12 @@ export async function discontinueMedication(medId: number, medName: string, pati
   const { error: logError } = await supabaseAdmin
     .from('medication_logs')
     .insert({
-      med_id: Number(medId),
-      med_name: medName,
+      med_id: medId,
       patient_id: patientId,
-      status: 'DISCONTINUED',
-      scheduled_slot: 'STOPPED',
-      logged_at: new Date().toISOString()
+      med_name: medName,
+      status: 'DC',
+      logged_at: now,
+      scheduled_slot: 'STOPPED'
     });
 
   if (!logError) {
