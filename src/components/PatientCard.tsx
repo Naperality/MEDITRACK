@@ -105,6 +105,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
             <div className="space-y-4">
                {profile?.medications?.map((med: any) => {
                   const status = getMedicationStatus(med);
+                  const isCompleted = status.label === 'Completed';
                   return (
                     <div key={med.id} className={`p-5 rounded-2xl bg-white border shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors ${status.label === 'Completed' ? 'opacity-60 grayscale-[0.5]' : 'hover:border-blue-100 border-slate-100'}`}>
                       <div className="flex items-center gap-4">
@@ -130,7 +131,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
                            {status.label}
                         </div>
                         
-                        <EditMedicationModal med={med} />
+                        <EditMedicationModal med={med} disabled={isCompleted} />
                       </div>
                     </div>
                   );

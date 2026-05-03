@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { updateMedication, deleteMedication } from '@/app/actions/management';
 
-export default function EditMedicationModal({ med }: any) {
+export default function EditMedicationModal({ med, disabled }: { med: any, disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [times, setTimes] = useState<string[]>(med.scheduled_times || []);
@@ -31,8 +31,13 @@ export default function EditMedicationModal({ med }: any) {
 
   if (!isOpen) return (
     <button 
-      onClick={() => setIsOpen(true)} 
-      className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors"
+      onClick={() => !disabled && setIsOpen(true)}
+      disabled = {disabled} 
+      className={`p-2 rounded-lg transition-colors ${
+        disabled 
+          ? 'opacity-20 cursor-not-allowed text-slate-300' 
+          : 'hover:bg-slate-100 text-slate-400 hover:text-blue-600'
+      }`}
     >
       <Edit2 size={16} />
     </button>
