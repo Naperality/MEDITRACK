@@ -79,36 +79,31 @@ export async function deleteMedication(medId: number) {
  */
 export async function discontinueMedication(medId: number, medName: string, patientId: string) {
   // 1. Mark as discontinued
+  const now = new Date().toISOString();
   const { error: updateError } = await supabaseAdmin
     .from('medications')
     .update({ is_discontinued: true }) 
     .eq('id', medId);
 
-  if (updateError) {
-    // Returning the message and code so you see it on Vercel
-    return { error: `Update Failed: ${updateError.message} (Code: ${updateError.code})` };
-  }
+  if (updateError) return { error: updateError.message };
 
-  // 2. Insert log
+  // 2. Insert log using the arguments provided (No select needed!)
   const { error: logError } = await supabaseAdmin
     .from('medication_logs')
     .insert({
       med_id: Number(medId),
-      patient_id: patientId, // CRITICAL: If this is undefined, the insert will fail
+      patient_id: patientId,
       med_name: medName,
-      status: 'TAKEN', 
-      logged_at: new Date().toISOString(),
+      status: 'DISCONTINUED',
+      logged_at: now,
       scheduled_slot: 'STOPPED'
     });
 
-  if (logError) {
-    // This will send the EXACT database error back to your frontend modal
-    return { 
-      error: `Insert Failed: ${logError.message}. Details: ${logError.details || 'None'}. Hint: ${logError.hint || 'None'}` 
-    };
+  if (!logError) {
+    revalidatePath('/caregiver-dashboard');
+    revalidatePath('/patient-dashboard');
+    return { success: true };
   }
   
-  revalidatePath('/caregiver-dashboard');
-  revalidatePath('/patient-dashboard');
-  return { success: true };
+  return { error: logError.message };
 }

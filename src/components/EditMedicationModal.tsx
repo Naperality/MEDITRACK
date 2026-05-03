@@ -209,22 +209,11 @@ export default function EditMedicationModal({ med, disabled }: { med: any, disab
             <button 
               type="button" 
               onClick={async () => { 
-                if(confirm("Discontinue this medication?")) {
-                  setLoading(true);
-                  
-                  // Debug: log what we are sending before we even hit the server
-                  console.log("Sending to server:", { id: med.id, name: med.name, pId: med.patient_id });
-
+                if(confirm("Discontinue this medication? It will be moved to history and can no longer be edited.")) {
+                  setLoading(true); // Reuse loading state
                   const res = await discontinueMedication(med.id, med.name, med.patient_id);
-                  
                   setLoading(false);
-
-                  if (res?.error) {
-                    // THIS WILL SHOW THE DATABASE ERROR ON YOUR SCREEN IN VERCEL
-                    alert("DATABASE ERROR: " + res.error); 
-                  } else if (res?.success) {
-                    setIsOpen(false);
-                  }
+                  if (res.success) setIsOpen(false);
                 }
               }}
               disabled={loading}
