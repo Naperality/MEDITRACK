@@ -107,6 +107,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
                {profile?.medications?.map((med: any) => {
                   const status = getMedicationStatus(med);
                   const isCompleted = status.label === 'Completed';
+                  const isInactive = med.is_discontinued;
                   return (
                     <div key={med.id} className={`p-5 rounded-2xl bg-white border shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors ${status.label === 'Completed' ? 'opacity-60 grayscale-[0.5]' : 'hover:border-blue-100 border-slate-100'}`}>
                       <div className="flex items-center gap-4">
@@ -137,7 +138,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
                         <ViewMedicationModal med={med} />
                         
                         {/* Keep Edit Button (Disabled if completed) */}
-                          <EditMedicationModal med={med} disabled={isCompleted} />
+                          <EditMedicationModal med={med} disabled={isCompleted || isInactive} />
                         </div>
                       </div>
                     </div>

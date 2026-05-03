@@ -5,7 +5,7 @@ import {
   Edit2, X, Save, Trash2, Clock, 
   Calendar, FileText, Pill, Hash 
 } from 'lucide-react';
-import { updateMedication, deleteMedication } from '@/app/actions/management';
+import { updateMedication, discontinueMedication } from '@/app/actions/management';
 
 export default function EditMedicationModal({ med, disabled }: { med: any, disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -209,12 +209,16 @@ export default function EditMedicationModal({ med, disabled }: { med: any, disab
             <button 
               type="button" 
               onClick={async () => { 
-                if(confirm("Delete this medication? This action cannot be undone.")) {
-                  await deleteMedication(med.id);
-                  setIsOpen(false);
+                if(confirm("Discontinue this medication? It will be moved to history and can no longer be edited.")) {
+                  setLoading(true); // Reuse loading state
+                  const res = await discontinueMedication(med.id);
+                  setLoading(false);
+                  if (res.success) setIsOpen(false);
                 }
               }}
-              className="bg-rose-50 text-rose-500 px-5 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100"
+              disabled={loading}
+              className="bg-rose-50 text-rose-500 px-5 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center justify-center"
+              title="Discontinue Medication"
             >
               <Trash2 size={18} />
             </button>

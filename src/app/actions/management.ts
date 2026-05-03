@@ -72,3 +72,39 @@ export async function deleteMedication(medId: number) {
   }
   return { error: error.message };
 }
+
+/**
+ * DISCONTINUE MEDICATION (Replaces Delete)
+ * Marks medication as discontinued and logs the event.
+ */
+export async function discontinueMedication(medId: number) {
+  // 1. Update the medication record
+  // Assuming your column name is 'is_discontinued'. 
+  // If you use 'is_completed', you can use that, but 'is_discontinued' is clearer for history.
+  const { data: med, error: updateError } = await supabaseAdmin
+    .from('medications')
+    .update({ is_discontinued: true }) 
+    .eq('id', medId)
+    .select('patient_id')
+    .single();
+
+  if (updateError) return { error: updateError.message };
+
+  // 2. Insert a log entry into medication_logs
+  const { error: logError } = await supabaseAdmin
+    .from('medication_logs')
+    .insert({
+      medication_id: medId,
+      patient_id: med.patient_id,
+      status: 'DISCONTINUED',
+      logged_at: new Date().toISOString()
+    });
+
+  if (!logError) {
+    revalidatePath('/caregiver-dashboard');
+    revalidatePath('/patient-dashboard');
+    return { success: true };
+  }
+  
+  return { error: logError.message };
+}
