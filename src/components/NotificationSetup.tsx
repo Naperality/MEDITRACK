@@ -32,7 +32,7 @@ export default function NotificationSetup() {
         if (permission !== 'granted') return;
 
         // FIX: Convert the string key to Uint8Array
-        const convertedVapidKey = urlBase64ToUint8Array('BBt22uMz4mbH9MGQfELu9IhxL4LjPeLX8snOp0NIv-veKB8JHqHaKeS58EPonBRlrkNrAXq_1tI6qqvsKOxU-iM');
+        const convertedVapidKey = urlBase64ToUint8Array('BL37-lY0OgpI58Jy9Z20Sl31LqyfgBs2BVcx4ErfzBv4OwFbrVkW1q61MxPvKISKvEzNZCOKmCii8oYLurwr99A');
 
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,

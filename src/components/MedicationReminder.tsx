@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], todaysLogs: any[] }) {
   useEffect(() => {
     const checkSchedule = () => {
+      // 1. Get current Manila Time in HH:mm format
       const now = new Date();
       const manilaTimeStr = now.toLocaleTimeString('en-GB', {
         timeZone: 'Asia/Manila',
@@ -14,17 +15,30 @@ export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], 
         hour12: false
       });
 
+      // 2. Get current Manila Date in YYYY-MM-DD format
       const manilaDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 
       meds.forEach(med => {
-        const isScheduledNow = med.scheduled_times?.includes(manilaTimeStr);
+        // SAFETY: Skip if the medication is discontinued
+        if (med.is_discontinued === true) return;
+
+        // 3. Match against Database Time (HH:mm:ss)
+        // Since database has seconds and app has minutes, we use .startsWith()
+        const isScheduledNow = (med.scheduled_times || []).some((time: string) => 
+          time.startsWith(manilaTimeStr)
+        );
+
+        // 4. Date Range Validation
         const isWithinRange = manilaDateStr >= med.start_date && 
                              (med.end_date ? manilaDateStr <= med.end_date : true);
 
+        // 5. Already Logged Check
+        // We check if any log for today matches this medication ID AND this specific time slot
         const alreadyLogged = todaysLogs.some(log =>
-          log.med_id === med.id && log.scheduled_slot === manilaTimeStr
+          log.med_id === med.id && log.scheduled_slot.startsWith(manilaTimeStr)
         );
 
+        // 6. Trigger Notification
         if (isScheduledNow && isWithinRange && !alreadyLogged) {
           toast.custom((t) => (
             <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} 
@@ -58,13 +72,20 @@ export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], 
             </div>
           ), { duration: 6000 });
 
-          new Audio('/alert.mp3').play().catch(() => {});
+          // Play notification sound
+          new Audio('/alert.wav').play().catch(() => {
+             console.log("Audio playback blocked until user interacts with the page.");
+          });
         }
       });
     };
 
+    // Run check every minute
     const intervalId = setInterval(checkSchedule, 60000);
+    
+    // Initial check on component mount
     checkSchedule();
+
     return () => clearInterval(intervalId);
   }, [meds, todaysLogs]);
 

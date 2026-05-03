@@ -12,37 +12,55 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/android-chrome-192x192.png', 
+    icon: '/android-chrome-192x192.png',
     badge: '/favicon.ico',
     vibrate: [200, 100, 200],
-    data: { 
-        url: data.url || '/patient-dashboard' 
+    data: {
+      url: data.url || '/patient-dashboard'
     },
-    // Adding a tag prevents multiple notifications from stacking up 
-    // if the user misses several in a row.
     tag: 'medication-alert',
     renotify: true
   };
 
+  // Logic to prevent double notifications
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then((clientList) => {
+      // Check if any instance of your app is currently open and visible to the user
+      const isAppOpenAndVisible = clientList.some(client => {
+        return client.visibilityState === 'visible';
+      });
+
+      if (isAppOpenAndVisible) {
+        // The user is actively looking at the app.
+        // We let the MedicationReminder.tsx component handle the notification (Toast).
+        console.log("App is currently visible. Background notification suppressed.");
+        return; 
+      }
+
+      // If the app is closed, minimized, or the screen is locked, show the system notification.
+      return self.registration.showNotification(data.title, options);
+    })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // If a tab is already open, focus it instead of opening a new one
       for (const client of clientList) {
-        if (client.url === event.notification.data.url && 'focus' in client) {
+        // Use a relative path check or match against the data URL
+        if ('focus' in client) {
           return client.focus();
         }
       }
       // Otherwise, open a new window
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url);
+        return clients.openWindow(event.notification.data.url || '/patient-dashboard');
       }
     })
   );
