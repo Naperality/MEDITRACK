@@ -211,7 +211,7 @@ export default function EditMedicationModal({ med, disabled }: { med: any, disab
               onClick={async () => { 
                 if(confirm("Discontinue this medication? It will be moved to history and can no longer be edited.")) {
                   setLoading(true); // Reuse loading state
-                  const res = await discontinueMedication(med.id);
+                  const res = await discontinueMedication(med.id, med.name, med.patientId);
                   setLoading(false);
                   if (res.success) setIsOpen(false);
                 }
