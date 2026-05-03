@@ -28,7 +28,7 @@ export default async function CaregiverDashboard({
       profiles:patient_id (
         full_name,
         medications (
-          id, name, dosage, med_type, scheduled_times, patient_id,
+          id, name, dosage, med_type, scheduled_times, patient_id, is_discontinued,
           daily_count, is_taken, last_taken_at, start_date, end_date
         )
       )
