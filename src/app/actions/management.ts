@@ -85,7 +85,7 @@ export async function discontinueMedication(medId: number) {
     .from('medications')
     .update({ is_discontinued: true }) 
     .eq('id', medId)
-    .select('name, patient_id, scheduled_times')
+    .select('name, patient_id')
     .single();
 
   if (updateError) return { error: updateError.message };
@@ -98,7 +98,7 @@ export async function discontinueMedication(medId: number) {
       med_name: med.name,
       patient_id: med.patient_id,
       status: 'DISCONTINUED',
-      scheduled_slot: med.scheduled_times,
+      scheduled_slot: 'STOPPED',
       logged_at: new Date().toISOString()
     });
 
