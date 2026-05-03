@@ -91,10 +91,10 @@ export async function discontinueMedication(medId: number, medName: string, pati
   const { error: logError } = await supabaseAdmin
     .from('medication_logs')
     .insert({
-      med_id: medId,
+      med_id: Number(medId),
       patient_id: patientId,
       med_name: medName,
-      status: 'DISCONTINUED',
+      status: 'TAKEN',
       logged_at: now,
       scheduled_slot: 'STOPPED'
     });
