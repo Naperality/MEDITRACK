@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ChevronDown, History, Pill, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, History, Pill, Clock, CheckCircle2, Archive } from "lucide-react";
 import AddMedicationForm from "./AddMedicationForm";
 import UnlinkPatientButton from "@/components/UnlinkPatientButton";
 import EditMedicationModal from "@/components/EditMedicationModal";
@@ -8,6 +8,40 @@ import EditMedicationModal from "@/components/EditMedicationModal";
 // Note: Added caregiverId to the props to support unlinking
 export default function PatientCard({ profile, patientId, logs, caregiverId }: any) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Helper to determine the status badge
+  const getMedicationStatus = (med: any) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+    
+    const endDate = med.end_date ? new Date(med.end_date) : null;
+    if (endDate) endDate.setHours(0, 0, 0, 0);
+
+    // 1. Check if the medication period has ended
+    if (endDate && now > endDate) {
+      return {
+        label: 'Completed',
+        style: 'text-slate-600 bg-slate-100',
+        icon: <Archive size={14} />
+      };
+    }
+
+    // 2. If active, check if taken today
+    if (med.is_taken) {
+      return {
+        label: 'Taken',
+        style: 'text-green-600 bg-green-50',
+        icon: <CheckCircle2 size={14} />
+      };
+    }
+
+    // 3. Otherwise, it's pending for today
+    return {
+      label: 'Pending',
+      style: 'text-amber-600 bg-amber-50',
+      icon: <Clock size={14} />
+    };
+  };
 
   return (
     <div className={`bg-white border transition-all duration-300 rounded-[2rem] overflow-hidden ${isOpen ? 'border-blue-200 shadow-xl' : 'border-slate-100 shadow-sm hover:border-slate-200'}`}>
@@ -69,33 +103,38 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
 
             {/* Medication List */}
             <div className="space-y-4">
-               {profile?.medications?.map((med: any) => (
-                  <div key={med.id} className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-blue-100 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-slate-50 rounded-lg text-blue-500">
-                        <Pill size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800">{med.name}</p>
-                        <div className="flex gap-2 mt-1">
-                          {med.scheduled_times?.map((t: string, i: number) => (
-                            <span key={i} className="text-[9px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-100">{t}</span>
-                          ))}
+               {profile?.medications?.map((med: any) => {
+                  const status = getMedicationStatus(med);
+                  return (
+                    <div key={med.id} className={`p-5 rounded-2xl bg-white border shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors ${status.label === 'Completed' ? 'opacity-60 grayscale-[0.5]' : 'hover:border-blue-100 border-slate-100'}`}>
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2 rounded-lg ${status.label === 'Completed' ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-blue-500'}`}>
+                          <Pill size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 flex items-center gap-2">
+                            {med.name}
+                            {status.label === 'Completed' && <span className="text-[8px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase">Finished</span>}
+                          </p>
+                          <div className="flex gap-2 mt-1">
+                            {med.scheduled_times?.map((t: string, i: number) => (
+                              <span key={i} className="text-[9px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-100">{t}</span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className={med.is_taken ? 'text-green-600 bg-green-50 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold' : 'text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold'}>
-                         {med.is_taken ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                         {med.is_taken ? 'Taken' : 'Pending'}
+                      <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className={`${status.style} px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold transition-all`}>
+                           {status.icon}
+                           {status.label}
+                        </div>
+                        
+                        <EditMedicationModal med={med} />
                       </div>
-                      
-                      {/* NEW: Edit Medication Modal */}
-                      <EditMedicationModal med={med} />
                     </div>
-                  </div>
-               ))}
+                  );
+               })}
             </div>
           </div>
 
