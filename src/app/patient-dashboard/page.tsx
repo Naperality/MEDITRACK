@@ -37,6 +37,33 @@ export default async function PatientDashboard() {
     timeZone: "Asia/Manila" 
   });
 
+  const nowPH = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  const compareDate = new Date(nowPH).setHours(0, 0, 0, 0);
+  const recentLogs = allLogs?.slice(0, 8) || [];
+
+  // 2. FILTER MEDICATIONS ONCE (The "Source of Truth")
+  // This array only contains meds that are: 
+  // - Not discontinued AND 
+  // - Within the valid start/end date range
+  const activeMeds = meds?.filter(med => {
+    // Check discontinued status
+    if (med.is_discontinued) return false;
+
+    // Date range validation
+    const start = new Date(med.start_date);
+    const end = med.end_date ? new Date(med.end_date) : null;
+    const compareStart = new Date(start).setHours(0, 0, 0, 0);
+    const compareEnd = end ? new Date(end).setHours(0, 0, 0, 0) : null;
+
+    return compareDate >= compareStart && (compareEnd ? compareDate <= compareEnd : true);
+  }) || [];
+
+  // 3. STATS CALCULATION
+  // Calculate total doses ONLY from the active meds filtered above
+  const totalScheduledDoses = activeMeds.reduce((acc, m) => acc + (m.scheduled_times?.length || 0), 0);
+
+  const cManDate = nowPH.toLocaleDateString("en-US");
+
   const todaysLogs = allLogs?.filter(log => {
     const logDateManila = new Date(log.logged_at).toLocaleDateString("en-US", { 
       timeZone: "Asia/Manila" 
@@ -44,10 +71,6 @@ export default async function PatientDashboard() {
     return logDateManila === currentManilaDate;
   }) || [];
 
-  const nowPH = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  const recentLogs = allLogs?.slice(0, 8) || [];
-
-  // Calculate stats for the "Sleek" header
   const takenCount = todaysLogs.filter(l => l.status === 'TAKEN').length;
 
   return (
@@ -80,7 +103,7 @@ export default async function PatientDashboard() {
             <div className="md:col-span-2 bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-200">
               <div className="relative z-10">
                 <h2 className="text-3xl font-black tracking-tight mb-2">Hello there!</h2>
-                <p className="text-slate-400 font-medium mb-6">You have <span className="text-rose-400">{meds?.length || 0} active medications</span> in your regimen.</p>
+                <p className="text-slate-400 font-medium mb-6">You have <span className="text-rose-400">{activeMeds?.length || 0} active medications</span> in your regimen.</p>
                 <div className="flex items-center gap-4">
                   <div className="bg-white/10 px-4 py-2 rounded-full backdrop-blur-md flex items-center gap-2 border border-white/5">
                     <CalendarIcon className="w-4 h-4 text-rose-400" />
@@ -97,7 +120,7 @@ export default async function PatientDashboard() {
                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Today's Progress</p>
                <div className="flex items-end gap-2">
                  <span className="text-5xl font-black text-slate-900">{takenCount}</span>
-                 <span className="text-slate-400 font-bold mb-1.5 text-lg">/ {meds?.reduce((acc, m) => acc + m.scheduled_times.length, 0)}</span>
+                 <span className="text-slate-400 font-bold mb-1.5 text-lg">/ {totalScheduledDoses}</span>
                </div>
                <p className="text-slate-500 text-sm mt-2 font-medium">Doses completed today</p>
             </div>
@@ -117,6 +140,8 @@ export default async function PatientDashboard() {
 
             <div className="space-y-6">
               {meds?.map((med) => {
+                // 1. Check if the medication is explicitly marked as discontinued
+                if (med.is_discontinued === true) return null;
                 // --- DATE RANGE VALIDATION (MAINTAINED) ---
                 const start = new Date(med.start_date);
                 const end = med.end_date ? new Date(med.end_date) : null;
