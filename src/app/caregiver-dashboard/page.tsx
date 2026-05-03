@@ -5,6 +5,7 @@ import { linkPatient } from "@/app/actions/caregiver";
 import SyncTrigger from "@/components/SyncTrigger";
 import PatientCard from "@/components/PatientCard"; // New Component for Expandable Logic
 import SearchBar from "@/components/SearchBar"; // New Component for Search Logic
+
 import { 
   UserPlus, Activity, Pill, LayoutGrid, Search
 } from "lucide-react";
@@ -137,6 +138,7 @@ export default async function CaregiverDashboard({
                 profile={profile}
                 patientId={link.patient_id}
                 logs={patientLogs}
+                caregiverId={userId}
               />
             );
           })}
