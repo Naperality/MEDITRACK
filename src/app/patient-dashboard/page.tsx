@@ -9,7 +9,7 @@ import NotificationSetup from "@/components/NotificationSetup";
 import { 
   Pill, History, Activity, CheckCircle2, 
   AlertCircle, Info, Calendar as CalendarIcon,
-  Clock, HeartPulse
+  Clock, HeartPulse, Ban
 } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
@@ -219,37 +219,65 @@ export default async function PatientDashboard() {
                     Using allLogs instead of recentLogs 
                     to show the full 50 items fetched 
                 */}
-                {allLogs?.map((log) => (
-                  <div key={log.id} className="flex gap-4 relative z-10 group">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border-4 border-white transition-all group-hover:scale-110 ${
-                      log.status === 'TAKEN' ? 'bg-green-500 text-white' : 'bg-rose-500 text-white'
-                    }`}>
-                      {log.status === 'TAKEN' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                    </div>
-                    
-                    <div className="pt-1">
-                      <p className="text-sm font-black text-slate-800 leading-none mb-1 group-hover:text-rose-600 transition-colors">
-                        {log.med_name}
-                      </p>
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <Clock size={10} className="text-slate-300" />
-                        <p className="text-[10px] font-bold uppercase tracking-tight">
-                          {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
-                            hour: '2-digit', 
-                            minute: '2-digit', 
-                            timeZone: 'Asia/Manila' 
-                          })} 
-                          <span className="mx-1 opacity-30">•</span>
-                          {new Date(log.logged_at).toLocaleDateString('en-PH', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            timeZone: 'Asia/Manila' 
-                          })}
+                {allLogs?.map((log) => {
+                  // 1. Determine the visual style based on status
+                  let statusStyles = {
+                    color: "bg-rose-500", 
+                    icon: <AlertCircle size={18} />,
+                    label: ""
+                  };
+
+                  if (log.status === 'TAKEN') {
+                    statusStyles = {
+                      color: "bg-green-500",
+                      icon: <CheckCircle2 size={18} />,
+                      label: ""
+                    };
+                  } else if (log.status === 'DISCONTINUED') {
+                    statusStyles = {
+                      color: "bg-slate-400", // Gray indicates "Inactive/Stopped"
+                      icon: <Ban size={18} />,
+                      label: " (Stopped)"
+                    };
+                  }
+
+                  return (
+                    <div key={log.id} className="flex gap-4 relative z-10 group">
+                      {/* Dynamic Background Color */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border-4 border-white transition-all group-hover:scale-110 ${statusStyles.color} text-white`}>
+                        {statusStyles.icon}
+                      </div>
+                      
+                      <div className="pt-1">
+                        <p className="text-sm font-black text-slate-800 leading-none mb-1 group-hover:text-rose-600 transition-colors">
+                          {log.med_name}
+                          {/* Show the "Stopped" label only for discontinued logs */}
+                          {log.status === 'DISCONTINUED' && (
+                            <span className="ml-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                              Stopped
+                            </span>
+                          )}
                         </p>
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <Clock size={10} className="text-slate-300" />
+                          <p className="text-[10px] font-bold uppercase tracking-tight">
+                            {new Date(log.logged_at).toLocaleTimeString('en-PH', { 
+                              hour: '2-digit', 
+                              minute: '2-digit', 
+                              timeZone: 'Asia/Manila' 
+                            })} 
+                            <span className="mx-1 opacity-30">•</span>
+                            {new Date(log.logged_at).toLocaleDateString('en-PH', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              timeZone: 'Asia/Manila' 
+                            })}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {(!allLogs || allLogs.length === 0) && (
                   <div className="text-center py-10">
