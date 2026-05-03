@@ -94,7 +94,7 @@ export async function discontinueMedication(medId: number, medName: string, pati
       med_id: medId,
       patient_id: patientId,
       med_name: medName,
-      status: 'DC',
+      status: 'DISCONTINUED',
       logged_at: now,
       scheduled_slot: 'STOPPED'
     });
