@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { 
   Edit2, X, Save, Trash2, Clock, 
-  Calendar, FileText, Pill, Hash 
+  Calendar, FileText, Pill, Hash, Ban 
 } from 'lucide-react';
 import { updateMedication, discontinueMedication } from '@/app/actions/management';
 
@@ -220,7 +220,7 @@ export default function EditMedicationModal({ med, disabled }: { med: any, disab
               className="bg-rose-50 text-rose-500 px-5 rounded-2xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100 flex items-center justify-center"
               title="Discontinue Medication"
             >
-              <Trash2 size={18} />
+              <Ban size={18} />
             </button>
           </div>
         </form>

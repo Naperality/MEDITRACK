@@ -39,7 +39,7 @@ serve(async (req) => {
     const [currentHour, currentMinute] = phTimePart.split(':').map(Number);
 
     // 3. Fetch Data
-    const { data: meds, error: medsError } = await supabase.from('medications').select('*');
+    const { data: meds, error: medsError } = await supabase.from('medications').select('*').or('is_discontinued.eq.false,is_discontinued.is.null');;
     if (medsError) throw medsError;
 
     // Get existing logs for the current day to avoid duplicates
@@ -70,14 +70,26 @@ serve(async (req) => {
               .single();
 
             if (profile?.push_subscription) {
-              await webpush.sendNotification(
+              const response = await webpush.sendNotification(
                 JSON.parse(profile.push_subscription), 
                 JSON.stringify({
                   title: "Medication Reminder 💊",
                   body: `It's time to take your ${med.name} (${med.dosage})`,
                   url: "/patient-dashboard"
-                })
+                }),
+                {
+                  // These headers tell the Google/Apple push servers this is URGENT
+                  headers: {
+                    'Urgency': 'high',
+                    'Topic': 'medication-alerts' 
+                  },
+                  TTL: 60 * 60 // 1 hour
+                }
               ).catch(e => console.error(`Push failed for user ${med.patient_id}:`, e));
+              // Now you can log the status if the response exists
+              if (response) {
+                console.log(`Push sent for ${med.name}. Status: ${response.statusCode}`);
+              }
             }
           }
         }

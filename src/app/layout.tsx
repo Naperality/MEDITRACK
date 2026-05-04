@@ -21,6 +21,10 @@ export const metadata: Metadata = {
 // Viewport handles the mobile theme color (Updated to match Rose-600)
 export const viewport: Viewport = {
   themeColor: "#e11d48",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1, // Prevents zooming in
+  userScalable: false, // This is where you put user-scalable=no
 };
 
 export default function RootLayout({
