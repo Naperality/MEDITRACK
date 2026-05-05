@@ -37,9 +37,10 @@ serve(async (req) => {
     const phDateOnly = now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // YYYY-MM-DD
     const phTimePart = manilaString.split(', ')[1];
     const [currentHour, currentMinute] = phTimePart.split(':').map(Number);
+    const todayPH = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 
     // 3. Fetch Data
-    const { data: meds, error: medsError } = await supabase.from('medications').select('*').or('is_discontinued.eq.false,is_discontinued.is.null');;
+    const { data: meds, error: medsError } = await supabase.from('medications').select('*').or('is_discontinued.eq.false,is_discontinued.is.null').gte('end_date', todayPH);
     if (medsError) throw medsError;
 
     // Get existing logs for the current day to avoid duplicates
