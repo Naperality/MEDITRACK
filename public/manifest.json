@@ -1,6 +1,6 @@
 {
-  "name": "MediTrack Patient Portal",
-  "short_name": "MediTrack",
+  "name": "MediNow Patient Portal",
+  "short_name": "MediNow",
   "description": "Your personal medication tracker.",
   "start_url": "/",
   "display": "standalone",

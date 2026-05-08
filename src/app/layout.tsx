@@ -4,13 +4,13 @@ import "./globals.css";
 
 // Metadata handles the SEO and PWA manifest linking
 export const metadata: Metadata = {
-  title: "MediTrack",
+  title: "MediNow",
   description: "Your Personal Medication Tracker",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "MediTrack",
+    title: "MediNow",
   },
   icons: {
     icon: "/favicon.ico",

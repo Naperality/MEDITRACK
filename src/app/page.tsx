@@ -11,7 +11,7 @@ export default function Home() {
           <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shadow-lg shadow-rose-500/20">
             <Pill className="text-white w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">MediTrack</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">MediNow</h1>
         </div>
         
         <div className="flex items-center gap-3 sm:gap-8">
@@ -91,7 +91,7 @@ export default function Home() {
 
       <footer className="max-w-5xl mx-auto py-8 sm:py-12 px-6 border-t border-slate-100 text-center">
          <p className="text-slate-400 text-[10px] sm:text-xs tracking-widest uppercase italic">
-           “The greatest wealth is health.” — MediTrack PH
+           “The greatest wealth is health.” — MediNow PH
          </p>
       </footer>
     </div>

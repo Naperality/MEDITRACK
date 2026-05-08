@@ -65,7 +65,7 @@ export default async function CaregiverDashboard({
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-900 leading-none">Caregiver Portal</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MediTrack PH</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MediNow PH</p>
             </div>
           </div>
           <div className="flex items-center gap-4">

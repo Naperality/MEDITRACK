@@ -88,7 +88,7 @@ export default async function PatientDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-900 leading-none">Patient Portal</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MediTrack</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MediNow</p>
             </div>
           </div>
           <UserButton appearance={{ elements: { userButtonAvatarBox: "w-10 h-10 rounded-xl shadow-sm border border-slate-100" } }} />
