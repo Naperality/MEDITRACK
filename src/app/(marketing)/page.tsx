@@ -261,14 +261,14 @@ export default function Home() {
 
       {/* Footer Section */}
       <footer className="max-w-7xl mx-auto py-12 px-6 border-t border-slate-100 text-center">
-         <div className="flex justify-center gap-6 text-xs text-slate-400 mb-4 font-medium">
-           <Link href="/privacy" className="hover:text-rose-500 transition-colors">Privacy Policy</Link>
-           <Link href="/terms" className="hover:text-rose-500 transition-colors">Terms of Service</Link>
-           <Link href="/contact" className="hover:text-rose-500 transition-colors">Contact Support</Link>
-         </div>
-         <p className="text-slate-400 text-[11px] tracking-widest uppercase italic">
-            “The greatest wealth is health.” — MediNow PH
-         </p>
+        <div className="flex justify-center gap-6 text-xs text-slate-400 mb-4 font-medium">
+          <span className="hover:text-rose-500 transition-colors cursor-pointer">Privacy Policy</span>
+          <span className="hover:text-rose-500 transition-colors cursor-pointer">Terms of Service</span>
+          <span className="hover:text-rose-500 transition-colors cursor-pointer">Contact Support</span>
+        </div>
+        <p className="text-slate-400 text-[11px] tracking-widest uppercase italic">
+          “The greatest wealth is health.” — MediNow PH
+        </p>
       </footer>
     </div>
   );

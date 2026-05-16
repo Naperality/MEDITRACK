@@ -19,11 +19,11 @@ export default function Navbar() {
           <Link href="#features" className="text-sm font-medium text-slate-500 hover:text-rose-500 transition-colors">
             Features
           </Link>
-          <Link href="#download" className="text-sm font-medium text-slate-500 hover:text-rose-500 transition-colors">
-            Download
-          </Link>
           <Link href="#about" className="text-sm font-medium text-slate-500 hover:text-rose-500 transition-colors">
             About
+          </Link>
+          <Link href="#download" className="text-sm font-medium text-slate-500 hover:text-rose-500 transition-colors">
+            Download
           </Link>
         </div>
 
