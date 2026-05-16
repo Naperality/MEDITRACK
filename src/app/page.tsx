@@ -1,26 +1,26 @@
 'use client';
 import Link from "next/link";
-import Navbar from "@/components/Navbar"; // Make sure to create this component!
+import Navbar from "@/components/Navbar"; 
 import { Pill, FileText, Users, Calendar, Clock, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#fffcfc] text-slate-800 antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-[#fffcfc] text-slate-800 antialiased overflow-x-hidden scroll-smooth">
       
-      {/* Navbar Component */}
+      {/* Sticky Navbar Component */}
       <Navbar />
 
-      {/* Main Container - Scaled back up to your original spacious widths */}
-      <main className="relative pt-12 pb-24 px-6 max-w-7xl mx-auto z-10">
+      {/* Main Container */}
+      <main className="relative pt-6 pb-24 px-6 max-w-7xl mx-auto z-10">
         
-        {/* Ambient background glows from your original file */}
+        {/* Ambient background glows */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] -z-10 opacity-30 pointer-events-none">
           <div className="absolute top-[-5%] left-[5%] w-[60%] h-[60%] rounded-full bg-rose-200 blur-[120px]" />
           <div className="absolute top-[5%] right-[5%] w-[50%] h-[50%] rounded-full bg-pink-100 blur-[100px]" />
         </div>
 
-        {/* Header Hero Section - Restored big typography */}
-        <div id="home" className="text-center max-w-4xl mx-auto mb-16 sm:mb-24">
+        {/* Header Hero Section */}
+        <div id="home" className="text-center max-w-4xl mx-auto mb-16 sm:mb-24 pt-6 scroll-mt-24">
           {/* Pulsing Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 text-[11px] font-bold tracking-[0.2em] text-rose-600 uppercase bg-rose-50 border border-rose-100 rounded-full">
             <span className="relative flex h-2 w-2">
@@ -40,7 +40,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 2-Column Split Layout matching the image breakdown */}
+        {/* 2-Column Split Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-20">
           
           {/* LEFT COLUMN: Phone Mockups Visual Block */}
@@ -69,8 +69,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Large 2x2 Feature Grid Layout */}
-          <div id="features" className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* RIGHT COLUMN: Feature Grid Layout with offset scrolling hooks */}
+          <div id="features" className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 scroll-mt-24">
             <FeatureCard 
               icon={<FileText className="w-6 h-6 sm:w-7 h-7 text-amber-500" />}
               iconBg="bg-amber-50"
@@ -99,8 +99,8 @@ export default function Home() {
 
         </div>
 
-        {/* Centered Action Button Block from your original code */}
-        <div id="download" className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        {/* Download Action Section Trigger Block */}
+        <div id="download" className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 scroll-mt-24">
           <Link 
             href="/register" 
             className="group w-full sm:w-auto bg-rose-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-rose-700 transition-all shadow-xl shadow-rose-200 active:scale-95 text-base"
@@ -111,8 +111,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Simplified Footer matching layout bounds */}
-      <footer id="about" className="max-w-7xl mx-auto py-12 px-6 border-t border-slate-100 text-center">
+      {/* Footer Section */}
+      <footer id="about" className="max-w-7xl mx-auto py-12 px-6 border-t border-slate-100 text-center scroll-mt-24">
          <p className="text-slate-400 text-xs tracking-widest uppercase italic">
             “The greatest wealth is health.” — MediNow PH
          </p>
