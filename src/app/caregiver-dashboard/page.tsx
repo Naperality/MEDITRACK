@@ -20,7 +20,7 @@ export default async function CaregiverDashboard({
 
   const searchQuery = searchParams.q?.toLowerCase() || "";
 
-  // 1. FETCH: Retrieve links and nested data
+  // 1. FETCH: Retrieve links and nested data (UNCHANGED)
   const { data: links, error } = await supabaseAdmin
     .from('caregiver_patient')
     .select(`
@@ -37,7 +37,7 @@ export default async function CaregiverDashboard({
 
   const patientIds = links?.map(l => l.patient_id) || [];
 
-  // 2. FETCH LOGS
+  // 2. FETCH LOGS (UNCHANGED)
   const { data: allLogs } = await supabaseAdmin
     .from('medication_logs')
     .select('*')
@@ -46,50 +46,57 @@ export default async function CaregiverDashboard({
 
   if (error) console.error("Supabase Fetch Error:", error.message);
 
-  // Filter patients based on search query
+  // Filter patients based on search query (UNCHANGED)
   const filteredLinks = links?.filter((link: any) => {
     const name = (Array.isArray(link.profiles) ? link.profiles[0] : link.profiles)?.full_name || "";
     return name.toLowerCase().includes(searchQuery);
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] overflow-x-hidden">
+    <div className="min-h-screen bg-[#fffcfc] text-slate-800 antialiased overflow-x-hidden">
       <SyncTrigger isCaregiver />
 
       {/* Top Header Section */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <nav className="bg-white border-b border-rose-100/60 sticky top-0 z-30 shadow-[0_2px_20px_-10px_rgba(225,29,72,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
+            <div className="bg-rose-600 p-2.5 rounded-2xl shadow-lg shadow-rose-200">
               <Activity className="text-white w-5 h-5" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-900 leading-none">Caregiver Portal</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MediNow PH</p>
+              <p className="text-[10px] text-rose-500 font-extrabold uppercase tracking-[0.15em] mt-1.5">MediNow PH</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="bg-slate-50 p-1 rounded-full border border-slate-100">
+             <div className="bg-rose-50/40 p-1 rounded-full border border-rose-100/40">
                <UserButton />
              </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto p-4 sm:p-8">
-        
+      {/* Main Container Layer */}
+      <main className="max-w-6xl mx-auto p-4 sm:p-8 relative">
+        {/* Subtle ambient lighting design behind controls */}
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-rose-100/30 rounded-full blur-[100px] -z-10 pointer-events-none" />
+
         {/* Link Patient Action Area */}
         <section className="mb-12">
-          <div className="bg-slate-900 rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-slate-200">
-            {/* Background Decor */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] -z-0" />
+          <div className="bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-900 rounded-[2.5rem] p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-rose-950/5">
+            {/* Background Decor matching design style */}
+            <div className="absolute top-0 right-0 w-72 h-72 bg-rose-500/10 rounded-full blur-[80px] -z-0 pointer-events-none" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-60 h-60 bg-pink-500/5 rounded-full blur-[60px] -z-0 pointer-events-none" />
             
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-white/10 p-2 rounded-lg">
-                  <UserPlus className="w-5 h-5 text-blue-400" />
+                <div className="bg-white/10 p-2.5 rounded-xl border border-white/5">
+                  <UserPlus className="w-5 h-5 text-rose-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white">Add Patient to Monitor</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-white tracking-tight">Add Patient to Monitor</h2>
+                  <p className="text-xs text-slate-400 font-light mt-0.5">Connect dashboards via registered email channel profiles</p>
+                </div>
               </div>
 
               <form action={async (formData: FormData) => {
@@ -102,11 +109,11 @@ export default async function CaregiverDashboard({
                     name="email" 
                     type="email"
                     required
-                    className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white placeholder:text-slate-500 focus:bg-white/10 focus:border-blue-500 outline-none transition-all"
+                    className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white placeholder:text-slate-500 focus:bg-white/10 focus:border-rose-500 outline-none transition-all duration-300 text-sm"
                     placeholder="Enter patient's email address..."
                   />
                 </div>
-                <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 whitespace-nowrap">
+                <button className="bg-rose-600 hover:bg-rose-700 text-white px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-xl shadow-rose-950/20 text-sm whitespace-nowrap">
                   Start Monitoring
                 </button>
               </form>
@@ -115,10 +122,10 @@ export default async function CaregiverDashboard({
         </section>
 
         {/* Dashboard Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-rose-100/30 pb-6">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Patient Directory</h2>
-            <p className="text-slate-500 text-sm">Managing {links?.length || 0} active patient profiles</p>
+            <p className="text-slate-500 text-sm font-light mt-0.5">Managing {links?.length || 0} active patient medical records</p>
           </div>
           
           <div className="w-full md:w-80">
@@ -127,7 +134,7 @@ export default async function CaregiverDashboard({
         </div>
 
         {/* Expandable Patient List */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {filteredLinks?.map((link: any) => {
             const profile = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
             const patientLogs = allLogs?.filter(log => log.patient_id === link.patient_id) || [];
@@ -143,14 +150,16 @@ export default async function CaregiverDashboard({
             );
           })}
 
+          {/* Empty State Presentation Layer */}
           {(!filteredLinks || filteredLinks.length === 0) && (
-            <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-               <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <Search className="w-8 h-8 text-slate-300" />
+            <div className="text-center py-32 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-rose-50/10 pointer-events-none" />
+               <div className="bg-rose-50/60 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-100/40">
+                 <Search className="w-8 h-8 text-rose-400/80" />
                </div>
-               <h3 className="text-xl font-bold text-slate-800">No patients found</h3>
-               <p className="text-slate-400 mt-2 max-w-xs mx-auto text-sm">
-                 Try a different search or link a new patient using their email address above.
+               <h3 className="text-xl font-bold text-slate-800 tracking-tight">No patients found</h3>
+               <p className="text-slate-400 mt-2 max-w-xs mx-auto text-sm font-light leading-relaxed">
+                 Try a different search or link a new patient profile using their account email address above.
                </p>
             </div>
           )}

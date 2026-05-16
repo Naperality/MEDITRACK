@@ -127,16 +127,46 @@ export default function Home() {
 
             {/* Mockup Stack */}
             <div className="relative w-full max-w-[400px] h-[380px] sm:h-[450px]">
-              <div className="absolute left-0 top-12 w-[160px] h-[320px] bg-white rounded-[2rem] shadow-xl border border-rose-100 p-2 transform -rotate-6 transition-transform hover:rotate-0 duration-300">
-                <div className="w-full h-full bg-rose-50/40 rounded-[1.7rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium">Upcoming Doses</div>
+              
+              {/* LEFT PHONE: Upcoming Doses Interface */}
+              {/* Note: I increased size and reduced rotation subtly for professionalism */}
+              <div className="absolute left-0 top-12 w-[160px] h-[320px] bg-white rounded-[2rem] shadow-xl border border-rose-100 p-2 transform -rotate-4 transition-transform hover:rotate-0 duration-300 overflow-hidden group">
+                <div className="w-full h-full bg-rose-50/40 rounded-[1.7rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
+                  {/* Swap src with your actual asset path, e.g., /mockup-doses.png */}
+                  <img 
+                    src="/api/placeholder/160/320" 
+                    alt="MediNow Upcoming Doses Interface Snapshot"
+                    className="absolute inset-0 w-full h-full object-cover rounded-[1.7rem] transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Keep the text label visible as an overlay, or remove it if image has context */}
+                  <span className="relative z-10 bg-white/70 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm group-hover:opacity-0 transition-opacity">Upcoming Doses</span>
+                </div>
               </div>
               
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[190px] h-[370px] bg-white rounded-[2.2rem] shadow-2xl border-2 border-rose-100 p-2 z-10 transform scale-105">
-                <div className="w-full h-full bg-rose-50/40 rounded-[1.8rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium">Patient Profile</div>
+              {/* CENTER PHONE: Patient Profile Interface (Primary Focus) */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[190px] h-[370px] bg-white rounded-[2.2rem] shadow-2xl border-2 border-rose-100 p-2 z-10 transform scale-105 overflow-hidden group">
+                <div className="w-full h-full bg-rose-50/40 rounded-[1.8rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
+                  {/* Swap src with your actual asset path, e.g., /mockup-profile.png */}
+                  <img 
+                    src="/api/placeholder/190/370" 
+                    alt="MediNow Patient Profile Interface Snapshot"
+                    className="absolute inset-0 w-full h-full object-cover rounded-[1.8rem] transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <span className="relative z-10 bg-white/70 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm group-hover:opacity-0 transition-opacity">Patient Profile</span>
+                </div>
               </div>
 
-              <div className="absolute right-0 top-16 w-[160px] h-[300px] bg-white rounded-[1.8rem] shadow-lg border border-rose-100 p-2 transform rotate-6 transition-transform hover:rotate-0 duration-300">
-                <div className="w-full h-full bg-rose-50/40 rounded-[1.5rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium">Caregiver Dashboard</div>
+              {/* RIGHT PHONE: Caregiver Dashboard Interface */}
+              <div className="absolute right-0 top-16 w-[160px] h-[300px] bg-white rounded-[1.8rem] shadow-lg border border-rose-100 p-2 transform rotate-4 transition-transform hover:rotate-0 duration-300 overflow-hidden group">
+                <div className="w-full h-full bg-rose-50/40 rounded-[1.5rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
+                  {/* Swap src with your actual asset path, e.g., /mockup-caregiver.png */}
+                  <img 
+                    src="/api/placeholder/160/300" 
+                    alt="MediNow Caregiver Dashboard Interface Snapshot"
+                    className="absolute inset-0 w-full h-full object-cover rounded-[1.5rem] transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <span className="relative z-10 bg-white/70 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm group-hover:opacity-0 transition-opacity">Caregiver Dashboard</span>
+                </div>
               </div>
             </div>
           </div>
