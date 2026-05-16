@@ -8,6 +8,12 @@ import ViewMedicationModal from "./ViewMedicationModal";
 
 export default function PatientCard({ profile, patientId, logs, caregiverId }: any) {
   const [isOpen, setIsOpen] = useState(false);
+  // Helper to establish a consistent "today" marker at midnight
+  const getMidnightToday = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  };
 
   // Helper to determine the status badge
   const getMedicationStatus = (med: any) => {
@@ -20,8 +26,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
       };
     }
 
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const now = getMidnightToday();
     
     const endDate = med.end_date ? new Date(med.end_date) : null;
     if (endDate) endDate.setHours(0, 0, 0, 0);
@@ -52,6 +57,20 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
     };
   };
 
+  // Compute active medications count (Excluding Discontinued AND Expired items)
+  const activeMedicationsCount = profile?.medications?.filter((m: any) => {
+    if (m.is_discontinued) return false;
+    
+    if (m.end_date) {
+      const now = getMidnightToday();
+      const endDate = new Date(m.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      if (now > endDate) return false; // Filter out if passed end date
+    }
+    
+    return true;
+  }).length || 0;
+
   return (
     <div className={`bg-white border transition-all duration-300 rounded-[2rem] overflow-hidden ${isOpen ? 'border-blue-200 shadow-xl' : 'border-slate-100 shadow-sm hover:border-slate-200'}`}>
       
@@ -67,7 +86,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
           <div>
             <h3 className="font-bold text-slate-900">{profile?.full_name}</h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {profile?.medications?.filter((m: any) => !m.is_discontinued).length || 0} Medications Active
+              {activeMedicationsCount} Medications Active
             </p>
           </div>
         </div>

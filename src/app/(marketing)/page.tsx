@@ -134,7 +134,7 @@ export default function Home() {
                 <div className="w-full h-full bg-rose-50/40 rounded-[1.7rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
                   {/* Swap src with your actual asset path, e.g., /mockup-doses.png */}
                   <img 
-                    src="/api/placeholder/160/320" 
+                    src="/mockup-doses.jpg" 
                     alt="MediNow Upcoming Doses Interface Snapshot"
                     className="absolute inset-0 w-full h-full object-cover rounded-[1.7rem] transition-transform duration-500 group-hover:scale-105"
                   />
@@ -148,7 +148,7 @@ export default function Home() {
                 <div className="w-full h-full bg-rose-50/40 rounded-[1.8rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
                   {/* Swap src with your actual asset path, e.g., /mockup-profile.png */}
                   <img 
-                    src="/api/placeholder/190/370" 
+                    src="/mockup-profile.jpg" 
                     alt="MediNow Patient Profile Interface Snapshot"
                     className="absolute inset-0 w-full h-full object-cover rounded-[1.8rem] transition-transform duration-500 group-hover:scale-105"
                   />
@@ -161,7 +161,7 @@ export default function Home() {
                 <div className="w-full h-full bg-rose-50/40 rounded-[1.5rem] border border-dashed border-rose-200/50 flex items-center justify-center text-xs text-rose-400 font-medium overflow-hidden relative">
                   {/* Swap src with your actual asset path, e.g., /mockup-caregiver.png */}
                   <img 
-                    src="/api/placeholder/160/300" 
+                    src="/mockup-caregiver.jpg" 
                     alt="MediNow Caregiver Dashboard Interface Snapshot"
                     className="absolute inset-0 w-full h-full object-cover rounded-[1.5rem] transition-transform duration-500 group-hover:scale-105"
                   />
