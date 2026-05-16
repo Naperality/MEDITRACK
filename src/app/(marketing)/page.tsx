@@ -6,8 +6,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#fffcfc] text-slate-800 antialiased overflow-x-hidden scroll-smooth">
 
-      {/* Main Container */}
-      <main className="relative pt-6 pb-24 px-6 max-w-7xl mx-auto z-10">
+      {/* Main Container - Updated pt-6 to pt-28 to push content below the fixed navbar */}
+      <main className="relative pt-28 pb-24 px-6 max-w-7xl mx-auto z-10">
         
         {/* Ambient background glows */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] -z-10 opacity-30 pointer-events-none">
