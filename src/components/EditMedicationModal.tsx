@@ -100,10 +100,12 @@ export default function EditMedicationModal({ med, disabled }: { med: any, disab
                 defaultValue={med.med_type} 
                 className="w-full px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:border-blue-200 outline-none transition-all font-semibold text-sm"
               >
-                <option value="Tablet">Tablet</option>
-                <option value="Capsule">Capsule</option>
-                <option value="Syrup">Syrup</option>
-                <option value="Injection">Injection</option>
+                <option value="tablet">Tablet</option>
+                <option value="capsule">Capsule</option>
+                <option value="liquid">Liquid / Syrup</option>
+                <option value="injection">Injection</option>
+                <option value="topical">Cream / Ointment</option>
+                <option value="inhaler">Inhaler</option>
               </select>
             </div>
           </div>
