@@ -1,14 +1,10 @@
 'use client';
 import Link from "next/link";
-import Navbar from "@/components/Navbar"; 
 import { Pill, FileText, Users, Calendar, Clock, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#fffcfc] text-slate-800 antialiased overflow-x-hidden scroll-smooth">
-      
-      {/* Sticky Navbar Component */}
-      <Navbar />
 
       {/* Main Container */}
       <main className="relative pt-6 pb-24 px-6 max-w-7xl mx-auto z-10">

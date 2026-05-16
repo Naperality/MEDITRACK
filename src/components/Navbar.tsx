@@ -3,7 +3,6 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <div className="sticky top-0 w-full px-4 sm:px-6 py-2 z-50 backdrop-blur-sm pointer-events-none">
       <nav className="max-w-4xl mx-auto px-6 py-3 flex justify-between items-center bg-white/80 backdrop-blur-md border border-rose-100 rounded-full shadow-sm pointer-events-auto">
         {/* Brand Logo */}
         <div className="flex items-center">
@@ -44,6 +43,5 @@ export default function Navbar() {
           </Link>
         </div>
       </nav>
-    </div>
   );
 }

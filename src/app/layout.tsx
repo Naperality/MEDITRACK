@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
+import Navbar from "@/components/Navbar"; 
 import "./globals.css";
 
 // Metadata handles the SEO and PWA manifest linking
@@ -41,7 +42,14 @@ export default function RootLayout({
           <meta name="apple-mobile-web-app-capable" content="yes" />
         </head>
         <body className="antialiased">
-          {children}
+          <div className="fixed top-0 inset-x-0 z-[9999] pointer-events-none p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto pointer-events-auto">
+              <Navbar />
+            </div>
+          </div>
+          <div className="relative z-10">
+            {children}
+          </div>
         </body>
       </html>
     </ClerkProvider>
