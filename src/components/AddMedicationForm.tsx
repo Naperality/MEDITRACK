@@ -75,7 +75,7 @@ export default function AddMedicationForm({ patientId }: { patientId: string }) 
         </div>
 
         {/* Dosage & Frequency - Stacked on mobile, side-by-side on tablet+ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dosage</label>
             <input 
@@ -84,6 +84,26 @@ export default function AddMedicationForm({ patientId }: { patientId: string }) 
               className="w-full px-5 py-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-rose-500/10 focus:border-rose-200 outline-none transition-all text-sm font-semibold" 
               required 
             />
+          </div>
+          {/* Medication Type Dropdown */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medication Type</label>
+            <div className="relative">
+              <select 
+                name="medication_type" // This name key will show up in your Server Action formData
+                required
+                className="w-full appearance-none px-5 py-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-rose-500/10 focus:border-rose-200 outline-none transition-all text-sm font-semibold text-slate-700"
+              >
+                <option value="" disabled selected>Select type...</option>
+                <option value="tablet">Tablet</option>
+                <option value="capsule">Capsule</option>
+                <option value="liquid">Liquid / Syrup</option>
+                <option value="injection">Injection</option>
+                <option value="topical">Cream / Ointment</option>
+                <option value="inhaler">Inhaler</option>
+              </select>
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 rotate-90 pointer-events-none" />
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Frequency</label>
