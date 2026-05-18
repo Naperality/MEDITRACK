@@ -1,10 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import webpush from "https://esm.sh/web-push";
+// Pin specific versions to ensure stability in production
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0"
+import webpush from "https://esm.sh/web-push@3.6.1?target=deno";
 
 // 1. Setup VAPID
 webpush.setVapidDetails(
-  'mailto:support@yourdomain.com', 
+  'mailto:medinow2@gmail.com', 
   Deno.env.get('VAPID_PUBLIC_KEY')!,
   Deno.env.get('VAPID_PRIVATE_KEY')!
 );

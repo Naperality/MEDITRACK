@@ -88,47 +88,56 @@ export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], 
   if (!activeAlarmMed) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-      <div className="space-y-6 max-w-sm w-full">
-        {/* Pulsing Alarm Indicator */}
-        <div className="relative mx-auto h-24 w-24 rounded-full bg-rose-500 flex items-center justify-center shadow-2xl shadow-rose-500/50 animate-bounce">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-ping" />
-          <span className="text-white text-4xl relative">💊</span>
+    <div className="fixed inset-0 z-[9999] bg-slate-950/95 backdrop-blur-md overflow-y-auto min-h-screen w-screen flex items-center justify-center p-4">
+      {/* Container with a maximum height boundary for mobile layouts */}
+      <div className="w-full max-w-sm my-auto bg-slate-900/40 border border-white/5 rounded-[2rem] p-6 flex flex-col items-center justify-between text-center space-y-6 shadow-2xl">
+        
+        {/* Top Header / Icon Group */}
+        <div className="space-y-4 w-full">
+          {/* Pulsing Alarm Indicator */}
+          <div className="relative mx-auto h-20 w-20 rounded-full bg-rose-500 flex items-center justify-center shadow-2xl shadow-rose-500/40 animate-bounce">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-ping" />
+            <span className="text-white text-3xl relative">💊</span>
+          </div>
+
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black text-white tracking-tight uppercase tracking-wide text-rose-500 animate-pulse">
+              Critical Alarm
+            </h1>
+            <p className="text-slate-400 text-xs px-4">
+              Take your scheduled medication immediately.
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <h1 className="text-3xl font-black text-white tracking-tight animate-pulse">
-            CRITICAL ALARM
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Take your scheduled medication immediately.
+        {/* Medication Info Card */}
+        <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+          <h2 className="text-xl font-black text-white tracking-tight">{activeAlarmMed.name}</h2>
+          <p className="text-xs text-rose-400 font-bold tracking-wider uppercase mt-1 bg-rose-500/10 inline-block px-2.5 py-0.5 rounded-full">
+            {activeAlarmMed.dosage}
           </p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 my-2">
-          <h2 className="text-xl font-bold text-rose-400">{activeAlarmMed.name}</h2>
-          <p className="text-xs text-slate-300 font-medium mt-1">{activeAlarmMed.dosage}</p>
-        </div>
-
-        <div className="flex flex-col gap-3 pt-4">
+        {/* Action Button Group - Built cleanly for thumbs on touchscreens */}
+        <div className="w-full flex flex-col gap-2.5 pt-2">
           <button
             onClick={() => {
-              // Action: Close alarm UI and silence ringtone
               stopAlarm();
-              // Tip: You can invoke a Supabase mutation here to instantly mark it as 'TAKEN'
+              // Mutation hook to update Supabase goes here
             }}
-            className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition-all text-white font-black rounded-xl uppercase tracking-wider text-sm shadow-xl shadow-emerald-500/20"
+            className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] transition-all text-white font-black rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-emerald-500/20"
           >
             I have taken this med
           </button>
           
           <button
             onClick={stopAlarm}
-            className="w-full py-3 bg-transparent hover:bg-white/5 text-slate-400 font-bold rounded-xl text-xs uppercase tracking-widest transition-colors"
+            className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-[0.99] text-slate-300 font-bold rounded-xl text-xs uppercase tracking-widest transition-all border border-white/5"
           >
             Dismiss Alarm
           </button>
         </div>
+
       </div>
     </div>
   );
