@@ -1,7 +1,7 @@
 // Pin specific versions to ensure stability in production
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0"
-import webpush from "https://esm.sh/web-push@3.6.1?target=deno";
+import webpush from "https://esm.sh/web-push@3.6.0?node"; // Forces stable Node compatibility mode
 
 // 1. Setup VAPID
 webpush.setVapidDetails(
