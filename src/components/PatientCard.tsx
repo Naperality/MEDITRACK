@@ -51,7 +51,7 @@ export default function PatientCard({ profile, patientId, logs, caregiverId }: a
 
     // 4. Otherwise, it's pending for today
     return {
-      label: 'Pending',
+      label: 'On-Going',
       style: 'text-amber-600 bg-amber-50 border-amber-100',
       icon: <Clock size={14} />
     };
