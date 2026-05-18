@@ -1,4 +1,6 @@
 // public/sw.js
+
+// 1. Listen for the backend push event
 self.addEventListener('push', (event) => {
   let data = { title: 'Medication Reminder', body: 'Time to take your meds!' };
 
@@ -18,47 +20,29 @@ self.addEventListener('push', (event) => {
     data: {
       url: data.url || '/patient-dashboard'
     },
-    tag: 'medication-alert',
-    renotify: true
+    tag: 'medication-alert', // Overwrites old notifications with this tag
+    renotify: true            // Forces phone to vibrate/pop up every single time
   };
 
-  // Logic to prevent double notifications
+  // FORCE the system notification to show immediately, completely ignoring tab states
   event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then((clientList) => {
-      // Check if any instance of your app is currently open and visible to the user
-      const isAppOpenAndVisible = clientList.some(client => {
-        return client.visibilityState === 'visible';
-      });
-
-      if (isAppOpenAndVisible) {
-        // The user is actively looking at the app.
-        // We let the MedicationReminder.tsx component handle the notification (Toast).
-        console.log("App is currently visible. Background notification suppressed.");
-        return; 
-      }
-
-      // If the app is closed, minimized, or the screen is locked, show the system notification.
-      return self.registration.showNotification(data.title, options);
-    })
+    self.registration.showNotification(data.title, options)
   );
 });
 
+// 2. Listen for when the user taps the notification banner
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
+  event.notification.close(); // Close the notification banner immediately
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If a tab is already open, focus it instead of opening a new one
+      // If your app is already open in a tab, just bring it to the front
       for (const client of clientList) {
-        // Use a relative path check or match against the data URL
         if ('focus' in client) {
           return client.focus();
         }
       }
-      // Otherwise, open a new window
+      // If your app is completely closed, open a brand new window/tab
       if (clients.openWindow) {
         return clients.openWindow(event.notification.data.url || '/patient-dashboard');
       }
