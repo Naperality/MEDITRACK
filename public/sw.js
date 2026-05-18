@@ -1,12 +1,13 @@
 // public/sw.js
 
-// 1. Listen for the backend push event
 self.addEventListener('push', (event) => {
-  let data = { title: 'Medication Reminder', body: 'Time to take your meds!' };
+  let data = { title: 'Medication Reminder', body: 'Time to take your meds!', url: '/patient-dashboard' };
 
   try {
     if (event.data) {
-      data = event.data.json();
+      // Safely parse incoming WebPush payload
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
     }
   } catch (e) {
     console.error('Push data parsing failed:', e);
@@ -16,35 +17,43 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: '/android-chrome-192x192.png',
     badge: '/favicon.ico',
-    vibrate: [200, 100, 200],
+    vibrate: [300, 100, 300, 100, 300],
     data: {
-      url: data.url || '/patient-dashboard'
+      url: data.url // Crucial: Needs to be mapped correctly
     },
-    tag: 'medication-alert', // Overwrites old notifications with this tag
-    renotify: true            // Forces phone to vibrate/pop up every single time
+    tag: 'medication-alert',
+    renotify: true
   };
 
-  // FORCE the system notification to show immediately, completely ignoring tab states
+  // BROADCAST to any currently open browser tabs/installed app windows
+  self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    clientList.forEach((client) => {
+      client.postMessage({
+        type: 'TRIGGER_ALARM',
+        payload: data
+      });
+    });
+  });
+
   event.waitUntil(
     self.registration.showNotification(data.title, options)
   );
 });
 
-// 2. Listen for when the user taps the notification banner
 self.addEventListener('notificationclick', (event) => {
-  event.notification.close(); // Close the notification banner immediately
+  event.notification.close();
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If your app is already open in a tab, just bring it to the front
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
+          // Send another command to ensure the alarm screen triggers on focus
+          client.postMessage({ type: 'FOCUS_ALARM' });
           return client.focus();
         }
       }
-      // If your app is completely closed, open a brand new window/tab
-      if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url || '/patient-dashboard');
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(event.notification.data.url || '/patient-dashboard');
       }
     })
   );
