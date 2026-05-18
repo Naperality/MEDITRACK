@@ -72,7 +72,7 @@ export default function LoginPage() {
             <div className="bg-rose-600 p-2 rounded-xl shadow-lg shadow-rose-500/20">
               <Pill className="text-white w-6 h-6" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">MediTrack</h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">MediNow</h1>
         </div>
 
         {/* Subtle background glow */}
@@ -93,7 +93,7 @@ export default function LoginPage() {
           
           <footer className="mt-8 text-center">
             <p className="text-slate-400 text-[10px] sm:text-xs tracking-wide">
-              © 2026 MEDITRACK HEALTH. ALL RIGHTS RESERVED.
+              © 2026 MediNow HEALTH. ALL RIGHTS RESERVED.
             </p>
           </footer>
         </div>
