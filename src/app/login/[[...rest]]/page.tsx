@@ -31,7 +31,7 @@ export default function LoginPage() {
             <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-2.5 rounded-xl shadow-lg shadow-rose-500/20">
               <Pill className="text-white w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">MediTrack</span>
+            <span className="text-2xl font-bold text-white tracking-tight">MediNow</span>
           </div>
 
           <h2 className="text-4xl font-semibold text-white mb-8 leading-[1.2] tracking-tight">

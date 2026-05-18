@@ -1,9 +1,8 @@
-// Pin specific versions to ensure stability in production
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0"
-import webpush from "https://esm.sh/web-push@3.6.0?node"; // Forces stable Node compatibility mode
+import { serve } from "std/http/server"
+import { createClient } from "@supabase/supabase-js"
+import webpush from "web-push"
 
-// 1. Setup VAPID
+// 1. Setup VAPID with your active administrative support account
 webpush.setVapidDetails(
   'mailto:medinow2@gmail.com', 
   Deno.env.get('VAPID_PUBLIC_KEY')!,
@@ -16,7 +15,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight options request smoothly
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
@@ -25,124 +24,101 @@ serve(async (req) => {
       Deno.env.get('SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 2. Get high-accuracy current time in Manila
+    // 2. High-accuracy Manila Clock calculations
     const now = new Date();
-    
-    // We get the "Wall Clock" time for Manila to compare against scheduled slots
     const manilaString = now.toLocaleString("en-US", { 
       timeZone: "Asia/Manila", 
       hour12: false 
     });
     
-    // Extract PH components safely
-    const phDateOnly = now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // YYYY-MM-DD
+    const phDateOnly = now.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }); // Outputs: YYYY-MM-DD
     const phTimePart = manilaString.split(', ')[1];
     const [currentHour, currentMinute] = phTimePart.split(':').map(Number);
-    const todayPH = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+    const currentMinutesSinceMidnight = (currentHour * 60) + currentMinute;
 
-    // 3. Fetch Data
-    const { data: meds, error: medsError } = await supabase.from('medications').select('*').or('is_discontinued.eq.false,is_discontinued.is.null').gte('end_date', todayPH);
+    // 3. Optimized Database Fetching
+    // Only pull down medications that are actively valid on today's date
+    const { data: meds, error: medsError } = await supabase
+      .from('medications')
+      .select('*')
+      .or('is_discontinued.eq.false,is_discontinued.is.null')
+      .gte('end_date', phDateOnly)
+      .lte('start_date', phDateOnly);
+      
     if (medsError) throw medsError;
 
-    // Get existing logs for the current day to avoid duplicates
+    // Only pull down logs created TODAY within the Asia/Manila boundary context
     const { data: existingLogs } = await supabase
       .from('medication_logs')
-      .select('med_id, scheduled_slot, logged_at');
+      .select('med_id, scheduled_slot, logged_at')
+      .gte('logged_at', `${phDateOnly}T00:00:00+08:00`);
+
+    // Flatten existing logs into a high-performance Hash Set for fast validation lookups
+    const loggedCache = new Set(
+      existingLogs?.map(l => `${l.med_id}_${l.scheduled_slot}`) || []
+    );
 
     const logsToInsert = [];
 
+    // 4. Process Medications and Alarm Schedules
     for (const med of meds) {
       for (const slot of med.scheduled_times) {
         const [slotHours, slotMinutes] = slot.split(':').map(Number);
+        const slotMinutesSinceMidnight = (slotHours * 60) + slotMinutes;
         
-        // --- A. NOTIFICATION LOGIC (Real-time trigger) ---
+        const cacheKey = `${med.id}_${slot}`;
+        const alreadyHandledToday = loggedCache.has(cacheKey);
+
+        // --- A. REAL-TIME NOTIFICATION TRIGGER ---
         const isScheduledForNow = currentHour === slotHours && currentMinute === slotMinutes;
 
-        if (isScheduledForNow) {
-          const alreadyNotifiedToday = existingLogs?.some(l => {
-            const logDate = new Date(l.logged_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-            return l.med_id === med.id && l.scheduled_slot === slot && logDate === phDateOnly;
-          });
+        if (isScheduledForNow && !alreadyHandledToday) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('push_subscription')
+            .eq('id', med.patient_id)
+            .single();
 
-          if (!alreadyNotifiedToday) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('push_subscription')
-              .eq('id', med.patient_id)
-              .single();
-
-            if (profile?.push_subscription) {
-              const response = await webpush.sendNotification(
-                JSON.parse(profile.push_subscription), 
-                JSON.stringify({
-                  title: "Medication Reminder 💊",
-                  body: `It's time to take your ${med.name} (${med.dosage})`,
-                  url: "/patient-dashboard"
-                }),
-                {
-                  // These headers tell the Google/Apple push servers this is URGENT
-                  headers: {
-                    'Urgency': 'high',
-                    'Topic': 'medication-alerts' 
-                  },
-                  TTL: 60 * 60 // 1 hour
-                }
-              ).catch(e => console.error(`Push failed for user ${med.patient_id}:`, e));
-              // Now you can log the status if the response exists
-              if (response) {
-                console.log(`Push sent for ${med.name}. Status: ${response.statusCode}`);
+          if (profile?.push_subscription) {
+            await webpush.sendNotification(
+              JSON.parse(profile.push_subscription), 
+              JSON.stringify({
+                title: "Medication Reminder 💊",
+                body: `It's time to take your ${med.name} (${med.dosage})`,
+                url: "/patient-dashboard"
+              }),
+              {
+                headers: { 
+                  'Urgency': 'high', 
+                  'Topic': 'medication-alerts' 
+                },
+                TTL: 60 * 60 // Keeps notification retry active on server for 1 hour maximum
               }
-            }
+            ).catch(e => console.error(`Push transmission failed for user ${med.patient_id}:`, e));
           }
         }
 
-        // --- B. MISSED LOG LOGIC (Backfilling History) ---
-        // Iterate day-by-day from start_date to today
-        let checkDate = new Date(med.start_date);
-        const nowPH = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+        // --- B. LIGHTWEIGHT TODAY-ONLY MISSED LOG LOGIC ---
+        // If the current slot time has passed by more than 30 minutes and remains unlogged
+        const gracePeriodMinutes = 30;
+        const isPastGrace = currentMinutesSinceMidnight > (slotMinutesSinceMidnight + gracePeriodMinutes);
 
-        while (checkDate <= nowPH) {
-          // Create a date object for this specific slot on 'checkDate'
-          const slotTime = new Date(checkDate);
-          slotTime.setHours(slotHours, slotMinutes, 0, 0);
-
-          const gracePeriodMs = 30 * 60 * 1000; // 1 hours
-          const isPastGrace = nowPH.getTime() > (slotTime.getTime() + gracePeriodMs);
+        if (isPastGrace && !alreadyHandledToday) {
+          const timePart = `${String(slotHours).padStart(2, '0')}:${String(slotMinutes).padStart(2, '0')}:00`;
           
-          const currentSlotDateStr = slotTime.toLocaleDateString("en-CA");
-          const isWithinRange = currentSlotDateStr >= med.start_date && 
-                               (med.end_date ? currentSlotDateStr <= med.end_date : true);
-
-          if (isPastGrace && isWithinRange) {
-            const alreadyLogged = existingLogs?.some(l => {
-              const logDateString = new Date(l.logged_at).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-              return l.med_id === med.id && l.scheduled_slot === slot && logDateString === currentSlotDateStr;
-            });
-
-            if (!alreadyLogged) {
-              // Construct the ISO string with the PH offset (+08:00)
-              // We use sv-SE to get YYYY-MM-DD easily
-              const datePart = slotTime.toLocaleDateString("en-CA");
-              const timePart = `${String(slotHours).padStart(2, '0')}:${String(slotMinutes).padStart(2, '0')}:00`;
-              const manilaISO = `${datePart}T${timePart}+08:00`;
-
-              logsToInsert.push({
-                med_id: med.id,
-                patient_id: med.patient_id,
-                med_name: med.name,
-                status: 'MISSED',
-                logged_at: manilaISO, 
-                scheduled_slot: slot
-              });
-            }
-          }
-          // Move to next day
-          checkDate.setDate(checkDate.getDate() + 1);
+          logsToInsert.push({
+            med_id: med.id,
+            patient_id: med.patient_id,
+            med_name: med.name,
+            status: 'MISSED',
+            logged_at: `${phDateOnly}T${timePart}+08:00`, // Explicit Manila ISO timestamp insertion
+            scheduled_slot: slot
+          });
         }
       }
     }
 
-    // 4. Batch insert missed doses
+    // 5. Batch insert missed slots if any exist
     if (logsToInsert.length > 0) {
       const { error: insertError } = await supabase.from('medication_logs').insert(logsToInsert);
       if (insertError) throw insertError;
@@ -150,7 +126,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      timeProcessedPH: `${currentHour}:${currentMinute}`,
+      timeProcessedPH: `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`,
       missedDosesSynced: logsToInsert.length 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

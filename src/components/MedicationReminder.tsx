@@ -152,16 +152,6 @@ export default function MedicationReminder({ meds, todaysLogs }: { meds: any[], 
         {/* Action Button Group */}
         <div className="w-full flex flex-col gap-2.5 pt-2">
           <button
-            onClick={() => {
-              stopAlarm();
-              // Mutation hook to update Supabase goes here
-            }}
-            className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] transition-all text-white font-black rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-emerald-500/20"
-          >
-            I have taken this med
-          </button>
-          
-          <button
             onClick={handleDismiss}
             className="w-full py-3 bg-white/5 hover:bg-white/10 active:scale-[0.99] text-slate-300 font-bold rounded-xl text-xs uppercase tracking-widest transition-all border border-white/5"
           >
