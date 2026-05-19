@@ -13,15 +13,17 @@ import {
   UserPlus, Activity, Pill, LayoutGrid, Search
 } from "lucide-react";
 
-export default async function CaregiverDashboard({
-  searchParams,
-}: {
-  searchParams: { q?: string };
-}) {
+interface PageProps {
+  searchParams: Promise<{ q?: string }> | { q?: string };
+}
+
+export default async function CaregiverDashboardprops(props: PageProps){
+  // Await searchParams to guarantee Next.js evaluates fresh URL string components
+  const resolvedParams = await props.searchParams;
+  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+
   const { userId } = await auth();
   if (!userId) return null;
-
-  const searchQuery = searchParams.q?.toLowerCase() || "";
 
   // 1. FETCH: Retrieve links and nested data (UNCHANGED)
   const { data: links, error } = await supabaseAdmin
@@ -49,9 +51,10 @@ export default async function CaregiverDashboard({
 
   if (error) console.error("Supabase Fetch Error:", error.message);
 
-  // Filter patients based on search query (UNCHANGED)
+  // Filter patients based on search query matching anywhere in the name
   const filteredLinks = links?.filter((link: any) => {
-    const name = (Array.isArray(link.profiles) ? link.profiles[0] : link.profiles)?.full_name || "";
+    const profileObj = Array.isArray(link.profiles) ? link.profiles[0] : link.profiles;
+    const name = profileObj?.full_name || "";
     return name.toLowerCase().includes(searchQuery);
   });
 
