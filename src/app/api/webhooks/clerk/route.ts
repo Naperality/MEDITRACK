@@ -48,15 +48,13 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY! // Correct key to bypass RLS
   )
 
-  // Extract data from the Clerk Event
-  // Inside your route.ts, where you extract data:
-  const { id, email_addresses, first_name, last_name, unsafe_metadata } = evt.data as any;
-  const requestedRole = unsafe_metadata?.requested_role || 'PATIENT';
-  const email = email_addresses[0]?.email_address;
-  const fullName = `${first_name || ''} ${last_name || ''}`.trim();
-
   // Handle the events
   if (evt.type === 'user.created' || evt.type === 'user.updated') {
+    // Safely extract data specifically for creation/update payloads
+    const { id, email_addresses, first_name, last_name, unsafe_metadata } = evt.data as any;
+    const requestedRole = unsafe_metadata?.requested_role || 'PATIENT';
+    const email = email_addresses?.[0]?.email_address;
+    const fullName = `${first_name || ''} ${last_name || ''}`.trim();
     // 1. Check if user already exists to preserve their role
     const { data: existingUser } = await supabase
       .from('profiles')
@@ -83,9 +81,24 @@ export async function POST(req: Request) {
     }
   }
 
+  // Handle Deletions of accounts
   if (evt.type === 'user.deleted') {
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) console.error('Supabase Delete Error:', error);
+    const { id } = evt.data; // Deletion payload only guarantees the 'id'
+    if (!id) {
+      return new Response('No user ID found in deletion payload', { status: 400 });
+    }
+
+    console.log(`Syncing deletion for Clerk user ID: ${id}`);
+
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Supabase Delete Error:', error.message);
+      return new Response('Database deletion error', { status: 500 });
+    }
   }
 
   return new Response('Successfully synced', { status: 200 })
