@@ -2,17 +2,17 @@
 
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 export default function SearchBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   
-  // Initialize input state with whatever query is already in the URL
+  // Track text input state locally
   const [text, setText] = useState(searchParams.get("q") || "");
 
   useEffect(() => {
-    // Wait 300ms after the user stops typing before committing to the URL
     const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
       
@@ -22,21 +22,28 @@ export default function SearchBar() {
         params.delete("q");
       }
       
-      // Updates the URL query string gracefully without reloading the entire page
-      router.replace(`?${params.toString()}`, { scroll: false });
+      // startTransition forces Next.js to wait for the server component to re-render
+      startTransition(() => {
+        router.replace(`?${params.toString()}`, { scroll: false });
+        router.refresh(); // 🔥 CRITICAL: Forces Next.js to clear cache and update the server layout data
+      });
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [text, router, searchParams]);
 
-  // Handle manual clear or external URL changes
+  // Sync state if URL changes externally
   useEffect(() => {
     setText(searchParams.get("q") || "");
   }, [searchParams]);
 
   return (
     <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <Search 
+        className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200 ${
+          isPending ? "text-rose-500 animate-pulse" : "text-slate-400"
+        }`} 
+      />
       <input
         type="text"
         placeholder="Search patient name..."
