@@ -1,20 +1,38 @@
 "use client";
+
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function SearchBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Initialize input state with whatever query is already in the URL
+  const [text, setText] = useState(searchParams.get("q") || "");
 
-  const handleSearch = (term: string) => {
-    const params = new URLSearchParams(searchParams);
-    if (term) {
-      params.set("q", term);
-    } else {
-      params.delete("q");
-    }
-    router.replace(`?${params.toString()}`);
-  };
+  useEffect(() => {
+    // Wait 300ms after the user stops typing before committing to the URL
+    const delayDebounceFn = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      if (text) {
+        params.set("q", text);
+      } else {
+        params.delete("q");
+      }
+      
+      // Updates the URL query string gracefully without reloading the entire page
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [text, router, searchParams]);
+
+  // Handle manual clear or external URL changes
+  useEffect(() => {
+    setText(searchParams.get("q") || "");
+  }, [searchParams]);
 
   return (
     <div className="relative">
@@ -22,8 +40,9 @@ export default function SearchBar() {
       <input
         type="text"
         placeholder="Search patient name..."
-        onChange={(e) => handleSearch(e.target.value)}
-        className="w-full bg-white border border-slate-200 pl-11 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-sm"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full bg-white border border-slate-200 pl-11 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-rose-500/20 outline-none transition-all shadow-sm"
       />
     </div>
   );
